@@ -1,0 +1,60 @@
+\section{Modelo}
+
+Dado un grafo $G(V,E)$ con $n = |V|$ vertices y $m = |E|$ aristas,  un coloreo de G se define como una asignacion de un color o etiqueta a cada $v \in V$ de forma tal que para todo  par de vertices adyacentes $(p,q) \in E$ poseen colores distintos. El clasico problema de \textit{coloreo de grafos} consiste en encontrar un coloreo del grafo que utilize la menor cantidad de colores posibles.
+
+En este trabajo resolveremos una variante de este problema, el \textit{coloreo particionado de grafos}. A partir de un conjunto de vertices $V$ que se encuentra particionado en $V_1,...,V_k$, el problema consiste en asignar un color $c \in C$ a solo un vertice de cada particion de forma tal que dos vertices adyacentes no reciban el mismo color y minimizando la cantidad de colores utilizados.
+
+Este problema se puede modelar con Programacion Lineal Entera. Para ello, definamos las siguientes variables:
+
+\hspace{1px}
+
+\begin{center}
+$x_{pj} = \begin{cases}
+  1 & \text{si el color $j$ es asignado al vertice $p$} \\
+  0 & \text{en caso contrario}
+\end{cases}$
+
+\hspace{1px}
+
+$w_j = \begin{cases}
+  1 & \text{si $x_{pj} = 1$ para algun vertice $p$} \\
+  0 & \text{en caso contrario}
+\end{cases}$
+\end{center}
+
+\subsection{Funcion objetivo}
+
+De esta forma la funcion objetivo del LP consiste en minimizar la cantidad de colores utilizados:
+\begin{equation}
+min \sum_{j \in C} w_j
+\end{equation}
+
+Notar que $|C|$ esta acotado superiormente por la cantidad de particiones $k$.
+
+\vspace{10px}
+
+\subsection{Restricciones}
+
+Los vertices adyacentes no comparten color. Recordar que no necesariamente se le asigna un color a todo vertice.
+\begin{equation}
+x_{ij} + x_{kj} \leq 1 \;\;\;\;\; \forall (i,k) \in E,\;\; \forall j \in C
+\end{equation}
+
+Solo se le asigna un color a un unico vertice de cada particion $p \in P$. Esto implica que cada vertice tiene a lo sumo solo un color.
+\begin{equation}
+\sum_{i \in V_p} \sum_{j \in C} x_{ij} = 1 \;\;\;\;\; \forall p \in P
+\end{equation}
+
+Si un nodo usa color $j$, $w_j = 1$:
+\begin{equation}
+x_{ij} \leq w_j \;\;\;\;\; \forall i \in V, \forall j \in C
+\end{equation}
+
+Integralidad y positividad de las variables:
+\begin{equation}
+x_{ij} \in \{0,1\} \;\;\;\;\; \forall i \in V, \forall j \in C
+\end{equation}
+
+\begin{equation}
+w_j \in \{0,1\} \;\;\;\;\; \forall j \in C
+\end{equation}
