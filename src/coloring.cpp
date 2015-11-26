@@ -84,7 +84,7 @@ int main(int argc, char **argv) {
 	// start loading LP using CPLEX
 	int status;
 	CPXENVptr env; // pointer to enviroment
-	CPXLPptr lp;	 // pointer to the lp.
+	CPXLPptr lp;   // pointer to the lp.
 
 	env = CPXopenCPLEX(&status); // create enviroment
 
@@ -109,7 +109,7 @@ int main(int argc, char **argv) {
 
 	for (int i = 0; i < partition_size; ++i) {
 		objfun[i] = 1;
-		ctype[i]	= 'B';
+		ctype[i]	= CPX_BINARY;
 		colnames[i] = new char[10];
 		sprintf(colnames[i], "w_%d", (i+1));
 	}
@@ -118,10 +118,9 @@ int main(int argc, char **argv) {
 		for (int color = 1; color <= partition_size; ++color) {
 			int index = getVertexIndex(id, color, partition_size);
 			objfun[index]   = 0;
-			ctype[index]    = 'B';
+			ctype[index]    = CPX_BINARY;
 			colnames[index] = new char[10];
 			sprintf(colnames[index], "x_%d%d", id, color);
-			// cout << colnames[index] << " (" << index << ")" << endl;
 		}
 	}
 
@@ -225,7 +224,7 @@ int main(int argc, char **argv) {
 	for (std::vector<vector<int> >::iterator it = partitions.begin(); it != partitions.end(); ++it) {
 
 		int size = it->size();                 // current partition size.
-		// if (size == 0) continue;
+		if (size == 0) continue;               // skip empty partitions.
 
 		int ccnt = 0;                          // new columns being added.
 		int rcnt = 1;                          // new rows being added.
@@ -240,7 +239,7 @@ int main(int argc, char **argv) {
 		char **rownames = new char*[rcnt];     // row labels.
 
 		matbeg[0] = 0;
-		sense[0]  = 'L';
+		sense[0]  = 'E';
 		rhs[0]    = 1;
 		rownames[0] = new char[40];
 		sprintf(rownames[0], "partition_%d", p);
@@ -338,7 +337,7 @@ int main(int argc, char **argv) {
 	status = CPXsetintparam(env, CPX_PARAM_SCRIND, CPX_ON);
 		
 	if (status) {
-		printf("Problem setting CPX_PARAM_SCRIND\n");
+		printf("Problem setting CPX_PARAM_SCRIND.\n");
 		exit(1);
 	}
 		
@@ -346,7 +345,7 @@ int main(int argc, char **argv) {
 	status = CPXsetdblparam(env, CPX_PARAM_TILIM, 3600);
 	
 	if (status) {
-		cerr << "Problema seteando el tiempo limite" << endl;
+		printf("Problem setting time limit with CPX_PARAM_TILIM.\n");
 		exit(1);
 	}
  
@@ -363,12 +362,12 @@ int main(int argc, char **argv) {
 	status = CPXgettime(env, &inittime);
 
 	// solve LP
-	status = CPXlpopt(env, lp);
+	status = CPXmipopt(env, lp);
 
 	status = CPXgettime(env, &endtime);
 
 	if (status) {
-		printf("Optimization problem.\n");
+		printf("Optimization failed.\n");
 		exit(1);
 	}
 
@@ -380,10 +379,10 @@ int main(int argc, char **argv) {
 	p = CPXgetstatstring(env, solstat, statstring);
 	string statstr(statstring);
 	cout << endl << "Optimization result: " << statstring << endl;
-	if (solstat != CPX_STAT_OPTIMAL){
-		 exit(1);
-	}	
-		
+	if (solstat != CPXMIP_OPTIMAL) {
+		exit(1);
+	}
+
 	double objval;
 	status = CPXgetobjval(env, lp, &objval);
 		
@@ -407,13 +406,22 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 
-	// Write solutions different than 0 (tolerance: 1e-05).
+	// write solutions different than 0 (tolerance: 1e-05).
 	solfile << "Solution status: " << statstr << endl;
 	for (int i = 0; i < n; i++) {
 		if (sol[i] > TOL) {
 			solfile << "x_" << i << " = " << sol[i] << endl;
 		}
 	}
+
+	// write solutions to current window
+	printf("Solution found!\n");
+	for (int i = 0; i < n; i++) {
+		if (sol[i] > TOL) {
+			cout << "x_" << i << " = " << sol[i] << endl;
+		}
+	}
+
 
 	delete[] sol;
 	solfile.close();
