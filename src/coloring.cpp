@@ -76,6 +76,11 @@ int main(int argc, char **argv) {
 		partitions[assign_partition].push_back(i);
 	}
 
+	// update partition_size
+	for (std::vector<vector<int> >::iterator it = partitions.begin(); it != partitions.end(); ++it) {
+		if (it->size() == 0) --partition_size;
+	}
+	
 	// start loading LP using CPLEX
 	int status;
 	CPXENVptr env; // pointer to enviroment
@@ -154,6 +159,7 @@ int main(int argc, char **argv) {
 	"Wheat","White","WhiteSmoke","Yellow","YellowGreen"};
 
 	// load first restriction
+	{
 	int ccnt = 0;                          // new columns being added.
 	int rcnt = edge_size * partition_size; // new rows being added.
 	int nzcnt = rcnt*2;                    // nonzero constraint coefficients being added.
@@ -210,14 +216,16 @@ int main(int argc, char **argv) {
 	delete[] matind;
 	delete[] matval;
 	delete[] rownames;
+	}
 
 	// load second restriction
+	{
 	printf("partition_size: %d\n", partition_size);
 	int p = 1;
 	for (std::vector<vector<int> >::iterator it = partitions.begin(); it != partitions.end(); ++it) {
 
 		int size = it->size();                 // current partition size.
-		if (size == 0) continue;
+		// if (size == 0) continue;
 
 		int ccnt = 0;                          // new columns being added.
 		int rcnt = 1;                          // new rows being added.
@@ -266,12 +274,82 @@ int main(int argc, char **argv) {
 		++p;
 
 	}
+	}
 
 	// load third restriction
+	{
+	int ccnt = 0;                            // new columns being added.
+	int rcnt = vertex_size * partition_size; // new rows being added.
+	int nzcnt = rcnt*2;                      // nonzero constraint coefficients being added.
+
+	double *rhs = new double[rcnt];          // independent term in restrictions.
+	char *sense = new char[rcnt];            // sense of restriction inequality.
+
+	int *matbeg = new int[rcnt];             // array position where each restriction starts in matind and matval.
+	int *matind = new int[rcnt*2];           // index of variables != 0 in restriction (each var has an index defined above)
+	double *matval  = new double[rcnt*2];    // value corresponding to index in restriction.
+	char **rownames = new char*[rcnt];       // row labels.
+
+	int i = 0;
+	for (int v = 1; v <= vertex_size; ++v) {
+		for (int color = 1; color <= partition_size; ++color) {
+			matbeg[i] = i*2;
+
+			matind[i*2]   = getVertexIndex(v, color, partition_size);
+			matind[i*2+1] = color-1;
+
+			matval[i*2]   = 1;
+			matval[i*2+1] = -1;
+
+			rhs[i] = 0;
+			sense[i] = 'L';
+			rownames[i] = new char[40];
+			sprintf(rownames[i], "color_res");
+
+			++i;
+		}
+	}
+
+	// add restriction
+	status = CPXaddrows(env, lp, ccnt, rcnt, nzcnt, rhs, sense, matbeg, matind, matval, NULL, rownames);
+
+	if (status) {
+		printf("Problem adding restriction with CPXaddrows.\n");
+		exit(1);
+	}
+
+	// free memory
+	for (int i = 0; i < rcnt; ++i) {
+		delete[] rownames[i];
+	}
+	
+	delete[] rhs;
+	delete[] sense;
+	delete[] matbeg;
+	delete[] matind;
+	delete[] matval;
+	delete[] rownames;
+	}
 
 	// CPLEX by default minimizes the objective function. Just in case you want to maximize.
 	// CPXchgobjsen(env, lp, CPX_MAX);
 
+	// enable screen output
+	status = CPXsetintparam(env, CPX_PARAM_SCRIND, CPX_ON);
+		
+	if (status) {
+		printf("Problem setting CPX_PARAM_SCRIND\n");
+		exit(1);
+	}
+		
+	// set excecution limit
+	status = CPXsetdblparam(env, CPX_PARAM_TILIM, 3600);
+	
+	if (status) {
+		cerr << "Problema seteando el tiempo limite" << endl;
+		exit(1);
+	}
+ 
 	// write LP formulation to file
 	status = CPXwriteprob(env, lp, "graph.lp", NULL);
 		
@@ -279,6 +357,66 @@ int main(int argc, char **argv) {
 		printf("Problem writing LP problem to file.");
 		exit(1);
 	}
+		
+	// calculate runtime
+	double inittime, endtime;
+	status = CPXgettime(env, &inittime);
+
+	// solve LP
+	status = CPXlpopt(env, lp);
+
+	status = CPXgettime(env, &endtime);
+
+	if (status) {
+		printf("Optimization problem.\n");
+		exit(1);
+	}
+
+	// check solution state
+	int solstat;
+	char statstring[510];
+	CPXCHARptr p;
+	solstat = CPXgetstat(env, lp);
+	p = CPXgetstatstring(env, solstat, statstring);
+	string statstr(statstring);
+	cout << endl << "Optimization result: " << statstring << endl;
+	if (solstat != CPX_STAT_OPTIMAL){
+		 exit(1);
+	}	
+		
+	double objval;
+	status = CPXgetobjval(env, lp, &objval);
+		
+	if (status) {
+		printf("Problem obtaining optimal solution.\n");
+		exit(1);
+	}
+		
+	cout << "Solution: " << "\t" << objval << "\t" << (endtime - inittime) << endl; 
+
+	// write solutions to file
+	std::string outputfile = "graph.sol";
+	ofstream solfile(outputfile.c_str());
+
+	// get values of all solutions
+	double *sol = new double[n];
+	status = CPXgetx(env, lp, sol, 0, n - 1);
+
+	if (status) {
+		printf("Problem obtaining the solution of the LP.\n");
+		exit(1);
+	}
+
+	// Write solutions different than 0 (tolerance: 1e-05).
+	solfile << "Solution status: " << statstr << endl;
+	for (int i = 0; i < n; i++) {
+		if (sol[i] > TOL) {
+			solfile << "x_" << i << " = " << sol[i] << endl;
+		}
+	}
+
+	delete[] sol;
+	solfile.close();
 
 	return 0;
 }

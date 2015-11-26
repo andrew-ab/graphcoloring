@@ -2,146 +2,238 @@
 \Problem name: Instance of partitioned graph coloring.
 
 Minimize
- obj: x1 + x2 + x3
+ obj: w_1 + w_2 + w_3 + w_4 + w_5
 Subject To
- c1:  x4 + x7 <= 1
- c2:  x5 + x8 <= 1
- c3:  x6 + x9 <= 1
- c4:  x4 + x13 <= 1
- c5:  x5 + x14 <= 1
- c6:  x6 + x15 <= 1
- c7:  x4 + x22 <= 1
- c8:  x5 + x23 <= 1
- c9:  x6 + x24 <= 1
- c10: x4 + x28 <= 1
- c11: x5 + x29 <= 1
- c12: x6 + x30 <= 1
- c13: x7 + x10 <= 1
- c14: x8 + x11 <= 1
- c15: x9 + x12 <= 1
- c16: x7 + x19 <= 1
- c17: x8 + x20 <= 1
- c18: x9 + x21 <= 1
- c19: x7 + x25 <= 1
- c20: x8 + x26 <= 1
- c21: x9 + x27 <= 1
- c22: x10 + x16 <= 1
- c23: x11 + x17 <= 1
- c24: x12 + x18 <= 1
- c25: x10 + x22 <= 1
- c26: x11 + x23 <= 1
- c27: x12 + x24 <= 1
- c28: x10 + x31 <= 1
- c29: x11 + x32 <= 1
- c30: x12 + x33 <= 1
- c31: x13 + x16 <= 1
- c32: x14 + x17 <= 1
- c33: x15 + x18 <= 1
- c34: x13 + x19 <= 1
- c35: x14 + x20 <= 1
- c36: x15 + x21 <= 1
- c37: x13 + x31 <= 1
- c38: x14 + x32 <= 1
- c39: x15 + x33 <= 1
- c40: x16 + x25 <= 1
- c41: x17 + x26 <= 1
- c42: x18 + x27 <= 1
- c43: x16 + x28 <= 1
- c44: x17 + x29 <= 1
- c45: x18 + x30 <= 1
- c46: x19 + x34 <= 1
- c47: x20 + x35 <= 1
- c48: x21 + x36 <= 1
- c49: x22 + x34 <= 1
- c50: x23 + x35 <= 1
- c51: x24 + x36 <= 1
- c52: x25 + x34 <= 1
- c53: x26 + x35 <= 1
- c54: x27 + x36 <= 1
- c55: x28 + x34 <= 1
- c56: x29 + x35 <= 1
- c57: x30 + x36 <= 1
- c58: x31 + x34 <= 1
- c59: x32 + x35 <= 1
- c60: x33 + x36 <= 1
- c61: x7 + x8 + x9 + x22 + x23 + x24  = 1
- c62:  = 1
- c63: x19 + x20 + x21 + x34 + x35 + x36  = 1
- c64: x4 + x5 + x6 + x10 + x11 + x12 + x13 + x14 + x15 + x16 + x17 + x18 + x25
-      + x26 + x27 + x28 + x29 + x30 + x31 + x32 + x33  = 1
- c65:  = 1
- c66: - x1 + x4 <= 0
- c67: - x2 + x5 <= 0
- c68: - x3 + x6 <= 0
- c69: - x1 + x7 <= 0
- c70: - x2 + x8 <= 0
- c71: - x3 + x9 <= 0
- c72: - x1 + x10 <= 0
- c73: - x2 + x11 <= 0
- c74: - x3 + x12 <= 0
- c75: - x1 + x13 <= 0
- c76: - x2 + x14 <= 0
- c77: - x3 + x15 <= 0
- c78: - x1 + x16 <= 0
- c79: - x2 + x17 <= 0
- c80: - x3 + x18 <= 0
- c81: - x1 + x19 <= 0
- c82: - x2 + x20 <= 0
- c83: - x3 + x21 <= 0
- c84: - x1 + x22 <= 0
- c85: - x2 + x23 <= 0
- c86: - x3 + x24 <= 0
- c87: - x1 + x25 <= 0
- c88: - x2 + x26 <= 0
- c89: - x3 + x27 <= 0
- c90: - x1 + x28 <= 0
- c91: - x2 + x29 <= 0
- c92: - x3 + x30 <= 0
- c93: - x1 + x31 <= 0
- c94: - x2 + x32 <= 0
- c95: - x3 + x33 <= 0
- c96: - x1 + x34 <= 0
- c97: - x2 + x35 <= 0
- c98: - x3 + x36 <= 0
+ Blue:         x_11 + x_21 <= 1
+ Red:          x_12 + x_22 <= 1
+ AliceBlue:    x_13 + x_23 <= 1
+ AntiqueWhite: x_14 + x_24 <= 1
+ Aqua:         x_15 + x_25 <= 1
+ Blue:         x_11 + x_41 <= 1
+ Red:          x_12 + x_42 <= 1
+ AliceBlue:    x_13 + x_43 <= 1
+ AntiqueWhite: x_14 + x_44 <= 1
+ Aqua:         x_15 + x_45 <= 1
+ Blue:         x_11 + x_71 <= 1
+ Red:          x_12 + x_72 <= 1
+ AliceBlue:    x_13 + x_73 <= 1
+ AntiqueWhite: x_14 + x_74 <= 1
+ Aqua:         x_15 + x_75 <= 1
+ Blue:         x_11 + x_91 <= 1
+ Red:          x_12 + x_92 <= 1
+ AliceBlue:    x_13 + x_93 <= 1
+ AntiqueWhite: x_14 + x_94 <= 1
+ Aqua:         x_15 + x_95 <= 1
+ Blue:         x_21 + x_31 <= 1
+ Red:          x_22 + x_32 <= 1
+ AliceBlue:    x_23 + x_33 <= 1
+ AntiqueWhite: x_24 + x_34 <= 1
+ Aqua:         x_25 + x_35 <= 1
+ Blue:         x_21 + x_61 <= 1
+ Red:          x_22 + x_62 <= 1
+ AliceBlue:    x_23 + x_63 <= 1
+ AntiqueWhite: x_24 + x_64 <= 1
+ Aqua:         x_25 + x_65 <= 1
+ Blue:         x_21 + x_81 <= 1
+ Red:          x_22 + x_82 <= 1
+ AliceBlue:    x_23 + x_83 <= 1
+ AntiqueWhite: x_24 + x_84 <= 1
+ Aqua:         x_25 + x_85 <= 1
+ Blue:         x_31 + x_51 <= 1
+ Red:          x_32 + x_52 <= 1
+ AliceBlue:    x_33 + x_53 <= 1
+ AntiqueWhite: x_34 + x_54 <= 1
+ Aqua:         x_35 + x_55 <= 1
+ Blue:         x_31 + x_71 <= 1
+ Red:          x_32 + x_72 <= 1
+ AliceBlue:    x_33 + x_73 <= 1
+ AntiqueWhite: x_34 + x_74 <= 1
+ Aqua:         x_35 + x_75 <= 1
+ Blue:         x_31 + x_101 <= 1
+ Red:          x_32 + x_102 <= 1
+ AliceBlue:    x_33 + x_103 <= 1
+ AntiqueWhite: x_34 + x_104 <= 1
+ Aqua:         x_35 + x_105 <= 1
+ Blue:         x_41 + x_51 <= 1
+ Red:          x_42 + x_52 <= 1
+ AliceBlue:    x_43 + x_53 <= 1
+ AntiqueWhite: x_44 + x_54 <= 1
+ Aqua:         x_45 + x_55 <= 1
+ Blue:         x_41 + x_61 <= 1
+ Red:          x_42 + x_62 <= 1
+ AliceBlue:    x_43 + x_63 <= 1
+ AntiqueWhite: x_44 + x_64 <= 1
+ Aqua:         x_45 + x_65 <= 1
+ Blue:         x_41 + x_101 <= 1
+ Red:          x_42 + x_102 <= 1
+ AliceBlue:    x_43 + x_103 <= 1
+ AntiqueWhite: x_44 + x_104 <= 1
+ Aqua:         x_45 + x_105 <= 1
+ Blue:         x_51 + x_81 <= 1
+ Red:          x_52 + x_82 <= 1
+ AliceBlue:    x_53 + x_83 <= 1
+ AntiqueWhite: x_54 + x_84 <= 1
+ Aqua:         x_55 + x_85 <= 1
+ Blue:         x_51 + x_91 <= 1
+ Red:          x_52 + x_92 <= 1
+ AliceBlue:    x_53 + x_93 <= 1
+ AntiqueWhite: x_54 + x_94 <= 1
+ Aqua:         x_55 + x_95 <= 1
+ Blue:         x_61 + x_111 <= 1
+ Red:          x_62 + x_112 <= 1
+ AliceBlue:    x_63 + x_113 <= 1
+ AntiqueWhite: x_64 + x_114 <= 1
+ Aqua:         x_65 + x_115 <= 1
+ Blue:         x_71 + x_111 <= 1
+ Red:          x_72 + x_112 <= 1
+ AliceBlue:    x_73 + x_113 <= 1
+ AntiqueWhite: x_74 + x_114 <= 1
+ Aqua:         x_75 + x_115 <= 1
+ Blue:         x_81 + x_111 <= 1
+ Red:          x_82 + x_112 <= 1
+ AliceBlue:    x_83 + x_113 <= 1
+ AntiqueWhite: x_84 + x_114 <= 1
+ Aqua:         x_85 + x_115 <= 1
+ Blue:         x_91 + x_111 <= 1
+ Red:          x_92 + x_112 <= 1
+ AliceBlue:    x_93 + x_113 <= 1
+ AntiqueWhite: x_94 + x_114 <= 1
+ Aqua:         x_95 + x_115 <= 1
+ Blue:         x_101 + x_111 <= 1
+ Red:          x_102 + x_112 <= 1
+ AliceBlue:    x_103 + x_113 <= 1
+ AntiqueWhite: x_104 + x_114 <= 1
+ Aqua:         x_105 + x_115 <= 1
+ partition_1:  x_61 + x_62 + x_63 + x_64 + x_65 <= 1
+ partition_2:  x_31 + x_32 + x_33 + x_34 + x_35 + x_111 + x_112 + x_113 + x_114
+               + x_115 <= 1
+ partition_3:  x_81 + x_82 + x_83 + x_84 + x_85 + x_101 + x_102 + x_103 + x_104
+               + x_105 <= 1
+ partition_4:  x_41 + x_42 + x_43 + x_44 + x_45 + x_51 + x_52 + x_53 + x_54
+               + x_55 <= 1
+ partition_5:  x_11 + x_12 + x_13 + x_14 + x_15 + x_21 + x_22 + x_23 + x_24
+               + x_25 + x_71 + x_72 + x_73 + x_74 + x_75 + x_91 + x_92 + x_93
+               + x_94 + x_95 <= 1
+ color_res:    - w_1 + x_11 <= 0
+ color_res:    - w_2 + x_12 <= 0
+ color_res:    - w_3 + x_13 <= 0
+ color_res:    - w_4 + x_14 <= 0
+ color_res:    - w_5 + x_15 <= 0
+ color_res:    - w_1 + x_21 <= 0
+ color_res:    - w_2 + x_22 <= 0
+ color_res:    - w_3 + x_23 <= 0
+ color_res:    - w_4 + x_24 <= 0
+ color_res:    - w_5 + x_25 <= 0
+ color_res:    - w_1 + x_31 <= 0
+ color_res:    - w_2 + x_32 <= 0
+ color_res:    - w_3 + x_33 <= 0
+ color_res:    - w_4 + x_34 <= 0
+ color_res:    - w_5 + x_35 <= 0
+ color_res:    - w_1 + x_41 <= 0
+ color_res:    - w_2 + x_42 <= 0
+ color_res:    - w_3 + x_43 <= 0
+ color_res:    - w_4 + x_44 <= 0
+ color_res:    - w_5 + x_45 <= 0
+ color_res:    - w_1 + x_51 <= 0
+ color_res:    - w_2 + x_52 <= 0
+ color_res:    - w_3 + x_53 <= 0
+ color_res:    - w_4 + x_54 <= 0
+ color_res:    - w_5 + x_55 <= 0
+ color_res:    - w_1 + x_61 <= 0
+ color_res:    - w_2 + x_62 <= 0
+ color_res:    - w_3 + x_63 <= 0
+ color_res:    - w_4 + x_64 <= 0
+ color_res:    - w_5 + x_65 <= 0
+ color_res:    - w_1 + x_71 <= 0
+ color_res:    - w_2 + x_72 <= 0
+ color_res:    - w_3 + x_73 <= 0
+ color_res:    - w_4 + x_74 <= 0
+ color_res:    - w_5 + x_75 <= 0
+ color_res:    - w_1 + x_81 <= 0
+ color_res:    - w_2 + x_82 <= 0
+ color_res:    - w_3 + x_83 <= 0
+ color_res:    - w_4 + x_84 <= 0
+ color_res:    - w_5 + x_85 <= 0
+ color_res:    - w_1 + x_91 <= 0
+ color_res:    - w_2 + x_92 <= 0
+ color_res:    - w_3 + x_93 <= 0
+ color_res:    - w_4 + x_94 <= 0
+ color_res:    - w_5 + x_95 <= 0
+ color_res:    - w_1 + x_101 <= 0
+ color_res:    - w_2 + x_102 <= 0
+ color_res:    - w_3 + x_103 <= 0
+ color_res:    - w_4 + x_104 <= 0
+ color_res:    - w_5 + x_105 <= 0
+ color_res:    - w_1 + x_111 <= 0
+ color_res:    - w_2 + x_112 <= 0
+ color_res:    - w_3 + x_113 <= 0
+ color_res:    - w_4 + x_114 <= 0
+ color_res:    - w_5 + x_115 <= 0
 Bounds
- 0 <= x1 <= 1
- 0 <= x2 <= 1
- 0 <= x3 <= 1
- 0 <= x4 <= 1
- 0 <= x5 <= 1
- 0 <= x6 <= 1
- 0 <= x7 <= 1
- 0 <= x8 <= 1
- 0 <= x9 <= 1
- 0 <= x10 <= 1
- 0 <= x11 <= 1
- 0 <= x12 <= 1
- 0 <= x13 <= 1
- 0 <= x14 <= 1
- 0 <= x15 <= 1
- 0 <= x16 <= 1
- 0 <= x17 <= 1
- 0 <= x18 <= 1
- 0 <= x19 <= 1
- 0 <= x20 <= 1
- 0 <= x21 <= 1
- 0 <= x22 <= 1
- 0 <= x23 <= 1
- 0 <= x24 <= 1
- 0 <= x25 <= 1
- 0 <= x26 <= 1
- 0 <= x27 <= 1
- 0 <= x28 <= 1
- 0 <= x29 <= 1
- 0 <= x30 <= 1
- 0 <= x31 <= 1
- 0 <= x32 <= 1
- 0 <= x33 <= 1
- 0 <= x34 <= 1
- 0 <= x35 <= 1
- 0 <= x36 <= 1
+ 0 <= w_1 <= 1
+ 0 <= w_2 <= 1
+ 0 <= w_3 <= 1
+ 0 <= w_4 <= 1
+ 0 <= w_5 <= 1
+ 0 <= x_11 <= 1
+ 0 <= x_12 <= 1
+ 0 <= x_13 <= 1
+ 0 <= x_14 <= 1
+ 0 <= x_15 <= 1
+ 0 <= x_21 <= 1
+ 0 <= x_22 <= 1
+ 0 <= x_23 <= 1
+ 0 <= x_24 <= 1
+ 0 <= x_25 <= 1
+ 0 <= x_31 <= 1
+ 0 <= x_32 <= 1
+ 0 <= x_33 <= 1
+ 0 <= x_34 <= 1
+ 0 <= x_35 <= 1
+ 0 <= x_41 <= 1
+ 0 <= x_42 <= 1
+ 0 <= x_43 <= 1
+ 0 <= x_44 <= 1
+ 0 <= x_45 <= 1
+ 0 <= x_51 <= 1
+ 0 <= x_52 <= 1
+ 0 <= x_53 <= 1
+ 0 <= x_54 <= 1
+ 0 <= x_55 <= 1
+ 0 <= x_61 <= 1
+ 0 <= x_62 <= 1
+ 0 <= x_63 <= 1
+ 0 <= x_64 <= 1
+ 0 <= x_65 <= 1
+ 0 <= x_71 <= 1
+ 0 <= x_72 <= 1
+ 0 <= x_73 <= 1
+ 0 <= x_74 <= 1
+ 0 <= x_75 <= 1
+ 0 <= x_81 <= 1
+ 0 <= x_82 <= 1
+ 0 <= x_83 <= 1
+ 0 <= x_84 <= 1
+ 0 <= x_85 <= 1
+ 0 <= x_91 <= 1
+ 0 <= x_92 <= 1
+ 0 <= x_93 <= 1
+ 0 <= x_94 <= 1
+ 0 <= x_95 <= 1
+ 0 <= x_101 <= 1
+ 0 <= x_102 <= 1
+ 0 <= x_103 <= 1
+ 0 <= x_104 <= 1
+ 0 <= x_105 <= 1
+ 0 <= x_111 <= 1
+ 0 <= x_112 <= 1
+ 0 <= x_113 <= 1
+ 0 <= x_114 <= 1
+ 0 <= x_115 <= 1
 Binaries
- x1  x2  x3  x4  x5  x6  x7  x8  x9  x10  x11  x12  x13  x14  x15  x16  x17 
- x18  x19  x20  x21  x22  x23  x24  x25  x26  x27  x28  x29  x30  x31  x32 
- x33  x34  x35  x36 
+ w_1  w_2  w_3  w_4  w_5  x_11  x_12  x_13  x_14  x_15  x_21  x_22  x_23  x_24 
+ x_25  x_31  x_32  x_33  x_34  x_35  x_41  x_42  x_43  x_44  x_45  x_51  x_52 
+ x_53  x_54  x_55  x_61  x_62  x_63  x_64  x_65  x_71  x_72  x_73  x_74  x_75 
+ x_81  x_82  x_83  x_84  x_85  x_91  x_92  x_93  x_94  x_95  x_101  x_102 
+ x_103  x_104  x_105  x_111  x_112  x_113  x_114  x_115 
 End
