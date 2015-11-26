@@ -25,6 +25,8 @@ int loadObjectiveFunction(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int par
 int loadAdyacencyColorRestriction(CPXENVptr& env, CPXLPptr& lp, vector<edge>& edges, int edge_size, int partition_size);
 int loadSingleColorInPartitionRestriction(CPXENVptr& env, CPXLPptr& lp, vector<vector<int> >& partitions, int partition_size);
 int loadAdyacencyColorRestriction(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int partition_size);
+int solveLP(CPXENVptr& env, CPXLPptr& lp, int edge_size, int vertex_size, int partition_size);
+int setBranchAndBoundConfig(CPXENVptr& env);
 
 // colors array!
 const char* colors[] = {"Blue", "Red", "Green", "Yellow", "Grey", "Green", "Pink", "AliceBlue","AntiqueWhite","Aqua","Aquamarine","Azure","Beige",
@@ -84,7 +86,7 @@ int main(int argc, char **argv) {
 	}
 
 	// set random seed
- 	// srand(time(NULL));
+	srand(time(NULL));
 
 	// asign every vertex to a partition
 	int partition_size = rand() % vertex_size;
@@ -101,8 +103,6 @@ int main(int argc, char **argv) {
 	for (std::vector<vector<int> >::iterator it = partitions.begin(); it != partitions.end(); ++it) {
 		if (it->size() == 0) --partition_size;
 	}
-	
-	int n = partition_size + (vertex_size*partition_size); // amount of total variables
 
 	// start loading LP using CPLEX
 	int status;
@@ -129,96 +129,16 @@ int main(int argc, char **argv) {
 	loadSingleColorInPartitionRestriction(env, lp, partitions, partition_size);
 	loadAdyacencyColorRestriction(env, lp, vertex_size, partition_size);
 
-	// CPLEX by default minimizes the objective function. Just in case you want to maximize.
-	// CPXchgobjsen(env, lp, CPX_MAX);
-
-	// enable/disable screen output
-	status = CPXsetintparam(env, CPX_PARAM_SCRIND, CPX_OFF);
-		
-	if (status) {
-		printf("Problem setting CPX_PARAM_SCRIND.\n");
-		exit(1);
-	}
-		
-	// set excecution limit
-	status = CPXsetdblparam(env, CPX_PARAM_TILIM, 3600);
-	
-	if (status) {
-		printf("Problem setting time limit with CPX_PARAM_TILIM.\n");
-		exit(1);
-	}
- 
-	// write LP formulation to file
+	// write LP formulation to file, great to debug.
 	status = CPXwriteprob(env, lp, "graph.lp", NULL);
 		
 	if (status) {
 		printf("Problem writing LP problem to file.");
 		exit(1);
 	}
-		
-	// calculate runtime
-	double inittime, endtime;
-	status = CPXgettime(env, &inittime);
 
-	// solve LP
-	status = CPXmipopt(env, lp);
-
-	status = CPXgettime(env, &endtime);
-
-	if (status) {
-		printf("Optimization failed.\n");
-		exit(1);
-	}
-
-	// check solution state
-	int solstat;
-	char statstring[510];
-	CPXCHARptr p;
-	solstat = CPXgetstat(env, lp);
-	p = CPXgetstatstring(env, solstat, statstring);
-	string statstr(statstring);
-	cout << endl << "Optimization result: " << statstring << endl;
-	if (solstat != CPXMIP_OPTIMAL) {
-		exit(1);
-	}
-
-	double objval;
-	status = CPXgetobjval(env, lp, &objval);
-		
-	if (status) {
-		printf("Problem obtaining optimal solution.\n");
-		exit(1);
-	}
-	
-	// get values of all solutions
-	double *sol = new double[n];
-	status = CPXgetx(env, lp, sol, 0, n - 1);
-
-	if (status) {
-		printf("Problem obtaining the solution of the LP.\n");
-		exit(1);
-	}
-
-	// write solutions to current window
-	cout << "Runtime: " << (endtime - inittime) << endl;
-	printf("Graph: vertex_size: %d, edge_size: %d, partition_size: %d\n", vertex_size, edge_size, partition_size);
-	cout << "Colors used: " << objval << endl;
-	for (int color = 1; color <= partition_size; ++color) {
-		if (sol[color-1] == 1) {
-			cout << "w_" << color << " = " << sol[color-1] << " (" << colors[color-1] << ")" << endl;
-		}
-	}
-
-	for (int id = 1; id <= vertex_size; ++id) {
-		for (int color = 1; color <= partition_size; ++color) {
-			int index = getVertexIndex(id, color, partition_size);
-			if (sol[index] == 1) {
-				cout << "x_" << id << " = " << colors[color-1] << endl;
-			}
-		}
-	}
-
-	delete[] sol;
+	setBranchAndBoundConfig(env);
+	solveLP(env, lp, edge_size, vertex_size, partition_size);
 
 	return 0;
 }
@@ -448,6 +368,113 @@ int loadAdyacencyColorRestriction(CPXENVptr& env, CPXLPptr& lp, int vertex_size,
 	delete[] matind;
 	delete[] matval;
 	delete[] rownames;
+
+	return 0;
+}
+
+int solveLP(CPXENVptr& env, CPXLPptr& lp, int edge_size, int vertex_size, int partition_size) {
+
+	int n = partition_size + (vertex_size*partition_size); // amount of total variables
+
+	// calculate runtime
+	double inittime, endtime;
+	int status = CPXgettime(env, &inittime);
+
+	// solve LP
+	status = CPXmipopt(env, lp);
+
+	status = CPXgettime(env, &endtime);
+
+	if (status) {
+		printf("Optimization failed.\n");
+		exit(1);
+	}
+
+	// check solution state
+	int solstat;
+	char statstring[510];
+	CPXCHARptr p;
+	solstat = CPXgetstat(env, lp);
+	p = CPXgetstatstring(env, solstat, statstring);
+	string statstr(statstring);
+	if (solstat != CPXMIP_OPTIMAL && solstat != CPXMIP_OPTIMAL_TOL &&
+		solstat != CPXMIP_NODE_LIM_FEAS && solstat != CPXMIP_TIME_LIM_FEAS) {
+		exit(1);
+	}
+
+	double objval;
+	status = CPXgetobjval(env, lp, &objval);
+		
+	if (status) {
+		printf("Problem obtaining optimal solution.\n");
+		exit(1);
+	}
+	
+	// get values of all solutions
+	double *sol = new double[n];
+	status = CPXgetx(env, lp, sol, 0, n - 1);
+
+	if (status) {
+		printf("Problem obtaining the solution of the LP.\n");
+		exit(1);
+	}
+
+	// write solutions to current window
+	cout << endl << "Optimization result: " << statstring << endl;
+	cout << "Runtime: " << (endtime - inittime) << endl;
+	printf("Graph: vertex_size: %d, edge_size: %d, partition_size: %d\n", vertex_size, edge_size, partition_size);
+	cout << "Colors used: " << objval << endl;
+	for (int color = 1; color <= partition_size; ++color) {
+		if (sol[color-1] == 1) {
+			cout << "w_" << color << " = " << sol[color-1] << " (" << colors[color-1] << ")" << endl;
+		}
+	}
+
+	for (int id = 1; id <= vertex_size; ++id) {
+		for (int color = 1; color <= partition_size; ++color) {
+			int index = getVertexIndex(id, color, partition_size);
+			if (sol[index] == 1) {
+				cout << "x_" << id << " = " << colors[color-1] << endl;
+			}
+		}
+	}
+
+	delete[] sol;
+
+	return 0;
+}
+
+int setBranchAndBoundConfig(CPXENVptr& env) {
+
+	// CPLEX config
+	// http://www-01.ibm.com/support/knowledgecenter/SSSA5P_12.2.0/ilog.odms.cplex.help/Content/Optimization/Documentation/CPLEX/_pubskel/CPLEX916.html
+	
+	// maximize objective function
+	// CPXchgobjsen(env, lp, CPX_MAX);
+
+	// enable/disable screen output
+	CPXsetintparam(env, CPX_PARAM_SCRIND, CPX_OFF);
+
+	// set excecution limit
+	CPXsetdblparam(env, CPX_PARAM_TILIM, 3600);
+	
+	// disable presolve
+	// CPXsetintparam(env, CPX_PARAM_PREIND, CPX_OFF);
+
+	// enable traditional branch and bound
+	CPXsetintparam(env, CPX_PARAM_MIPSEARCH, CPX_MIPSEARCH_TRADITIONAL);
+
+	// use only one thread for experimentation
+	CPXsetintparam(env, CPX_PARAM_THREADS, 1);
+
+	// do not add cutting planes
+	CPXsetintparam(env, CPX_PARAM_EACHCUTLIM, CPX_OFF);
+
+	// disable gomory fractional cuts
+	CPXsetintparam(env, CPX_PARAM_FRACCUTS, -1);
+
+	// measure time in CPU time
+	CPXsetintparam(env, CPX_PARAM_CLOCKTYPE, CPX_ON);
 
 	return 0;
 }
