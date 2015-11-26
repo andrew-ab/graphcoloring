@@ -1,6 +1,8 @@
 #include <ilcplex/ilocplex.h>
 #include <ilcplex/cplex.h>
 
+#include <stdlib.h>
+
 #include <string>
 #include <vector>
 
@@ -17,6 +19,8 @@ struct edge {
 		to = b;
 	}
 };
+
+int getVertexIndex(int id, int color, int partition_size);
 
 int main(int argc, char **argv) {
 
@@ -48,19 +52,23 @@ int main(int argc, char **argv) {
 		else if (buf[0] == 'p') {
 			sscanf(&buf[7], "%d %d", &vertex_size, &edge_size);
 			printf("vertex_size: %d, edge_size: %d \n", vertex_size, edge_size);
-			printf("Adding edges! \n");
+			// printf("Adding edges! \n");
 		}
 		else if (buf[0] == 'e') {
 			int from, to;
 			sscanf(&buf[2], "%d %d", &from, &to);
-			printf("Edge: (%d,%d) \n", from, to);
+			// printf("Edge: (%d,%d) \n", from, to);
 			edges.push_back(edge(from, to));
 		}
 	}
 
+	// set random seed
+ 	srand(time(NULL));
+
 	// asign every vertex to a partition
-	int partition_size = 1 + (rand() % vertex_size);
-	vector<vector<int> > partitions(partition_size, vector<int>(vertex_size/partition_size));
+	int partition_size = rand() % vertex_size;
+
+	vector<vector<int> > partitions(partition_size, vector<int>());
 
 	// warning: this procedure doesn't guarantee every partition will have an element.
 	for (int i = 1; i <= vertex_size; ++i) {
@@ -71,7 +79,7 @@ int main(int argc, char **argv) {
 	// start loading LP using CPLEX
 	int status;
 	CPXENVptr env; // pointer to enviroment
-	CPXLPptr lp;   // pointer to the lp.
+	CPXLPptr lp;	 // pointer to the lp.
 
 	env = CPXopenCPLEX(&status); // create enviroment
 
@@ -89,18 +97,30 @@ int main(int argc, char **argv) {
 	}
 
 	// load objective function
-	double *objfun  = new double[partition_size];
-	char   *ctype   = new char[partition_size];
-	char **colnames = new char*[partition_size];
+	int n = partition_size + (vertex_size*partition_size);
+	double *objfun	= new double[n];
+	char	 *ctype	 = new char[n];
+	char **colnames = new char*[n];
 
-	for (int i = 0; i < partition_size; i++) {
+	for (int i = 0; i < partition_size; ++i) {
 		objfun[i] = 1;
-		ctype[i]  = 'B';
+		ctype[i]	= 'B';
 		colnames[i] = new char[10];
 		sprintf(colnames[i], "w_%d", (i+1));
 	}
 
-	status = CPXnewcols(env, lp, partition_size, objfun, NULL, NULL, ctype, colnames);
+	for (int id = 1; id <= vertex_size; ++id) {
+		for (int color = 1; color <= partition_size; ++color) {
+			int index = getVertexIndex(id, color, partition_size);
+			objfun[index]   = 0;
+			ctype[index]    = 'B';
+			colnames[index] = new char[10];
+			sprintf(colnames[index], "x_%d%d", id, color);
+			// cout << colnames[index] << " (" << index << ")" << endl;
+		}
+	}
+
+	status = CPXnewcols(env, lp, n, objfun, NULL, NULL, ctype, colnames);
 
 	if (status) {
 		printf("Problem adding variables with CPXnewcols.\n");
@@ -108,7 +128,7 @@ int main(int argc, char **argv) {
 	}
 	
 	// free memory
-	for (int i = 0; i < partition_size; ++i) {
+	for (int i = 0; i < n; ++i) {
 		delete[] colnames[i];
 	}
 	
@@ -116,6 +136,138 @@ int main(int argc, char **argv) {
 	delete[] ctype;
 	delete[] colnames;
 
+	// colors array!
+	const char* colors[] = {"Blue", "Red", "AliceBlue","AntiqueWhite","Aqua","Aquamarine","Azure","Beige","Bisque","Black","BlanchedAlmond",
+	"BlueViolet","Brown","BurlyWood","CadetBlue","Chartreuse","Chocolate","Coral","CornflowerBlue","Cornsilk","Crimson",
+	"Cyan","DarkBlue","DarkCyan","DarkGoldenRod","DarkGray","DarkGrey","DarkGreen","DarkKhaki","DarkMagenta","DarkOliveGreen",
+	"Darkorange","DarkOrchid","DarkRed","DarkSalmon","DarkSeaGreen","DarkSlateBlue","DarkSlateGray","DarkSlateGrey","DarkTurquoise",
+	"DarkViolet","DeepPink","DeepSkyBlue","DimGray","DimGrey","DodgerBlue","FireBrick","FloralWhite","ForestGreen","Fuchsia",
+	"Gainsboro","GhostWhite","Gold","GoldenRod","Gray","Grey","Green","GreenYellow","HoneyDew","HotPink","IndianRed","Indigo",
+	"Ivory","Khaki","Lavender","LavenderBlush","LawnGreen","LemonChiffon","LightBlue","LightCoral","LightCyan","LightGoldenRodYellow",
+	"LightGray","LightGrey","LightGreen","LightPink","LightSalmon","LightSeaGreen","LightSkyBlue","LightSlateGray","LightSlateGrey",
+	"LightSteelBlue","LightYellow","Lime","LimeGreen","Linen","Magenta","Maroon","MediumAquaMarine","MediumBlue","MediumOrchid",
+	"MediumPurple","MediumSeaGreen","MediumSlateBlue","MediumSpringGreen","MediumTurquoise","MediumVioletRed","MidnightBlue",
+	"MintCream","MistyRose","Moccasin","NavajoWhite","Navy","OldLace","Olive","OliveDrab","Orange","OrangeRed","Orchid",
+	"PaleGoldenRod","PaleGreen","PaleTurquoise","PaleVioletRed","PapayaWhip","PeachPuff","Peru","Pink","Plum","PowderBlue",
+	"Purple","RosyBrown","RoyalBlue","SaddleBrown","Salmon","SandyBrown","SeaGreen","SeaShell","Sienna","Silver","SkyBlue",
+	"SlateBlue","SlateGray","SlateGrey","Snow","SpringGreen","SteelBlue","Tan","Teal","Thistle","Tomato","Turquoise","Violet",
+	"Wheat","White","WhiteSmoke","Yellow","YellowGreen"};
+
+	// load first restriction
+	int ccnt = 0;                          // new columns being added.
+	int rcnt = edge_size * partition_size; // new rows being added.
+	int nzcnt = rcnt*2;                    // nonzero constraint coefficients being added.
+
+	double *rhs = new double[rcnt];        // independent term in restrictions.
+	char *sense = new char[rcnt];          // sense of restriction inequality.
+
+	int *matbeg = new int[rcnt];           // array position where each restriction starts in matind and matval.
+	int *matind = new int[rcnt*2];         // index of variables != 0 in restriction (each var has an index defined above)
+	double *matval  = new double[rcnt*2];  // value corresponding to index in restriction.
+	char **rownames = new char*[rcnt];     // row labels.
+
+	int i = 0;
+	for (std::vector<edge>::iterator it = edges.begin(); it != edges.end(); ++it) {
+		int from = it->from;
+		int to   = it->to;
+		for (int color = 1; color <= partition_size; ++color) {
+			matbeg[i] = i*2;
+
+			matind[i*2]   = getVertexIndex(from, color, partition_size);
+			matind[i*2+1] = getVertexIndex(to  , color, partition_size);
+
+			matval[i*2]   = 1;
+			matval[i*2+1] = 1;
+
+			rhs[i] = 1;
+			sense[i] = 'L';
+			rownames[i] = new char[40];
+			sprintf(rownames[i], "%s", colors[color-1]);
+
+			++i;
+		}
+	}
+
+	// debug flag
+	// status = CPXsetintparam(env, CPX_PARAM_DATACHECK, CPX_ON);
+
+	// add restriction
+	status = CPXaddrows(env, lp, ccnt, rcnt, nzcnt, rhs, sense, matbeg, matind, matval, NULL, rownames);
+
+	if (status) {
+		printf("Problem adding restriction with CPXaddrows.\n");
+		exit(1);
+	}
+
+	// free memory
+	for (int i = 0; i < rcnt; ++i) {
+		delete[] rownames[i];
+	}
+	
+	delete[] rhs;
+	delete[] sense;
+	delete[] matbeg;
+	delete[] matind;
+	delete[] matval;
+	delete[] rownames;
+
+	// load second restriction
+	printf("partition_size: %d\n", partition_size);
+	int p = 1;
+	for (std::vector<vector<int> >::iterator it = partitions.begin(); it != partitions.end(); ++it) {
+
+		int size = it->size();                 // current partition size.
+		if (size == 0) continue;
+
+		int ccnt = 0;                          // new columns being added.
+		int rcnt = 1;                          // new rows being added.
+		int nzcnt = size*partition_size;       // nonzero constraint coefficients being added.
+
+		double *rhs = new double[rcnt];        // independent term in restrictions.
+		char *sense = new char[rcnt];          // sense of restriction inequality.
+
+		int *matbeg = new int[rcnt];           // array position where each restriction starts in matind and matval.
+		int *matind = new int[nzcnt];          // index of variables != 0 in restriction (each var has an index defined above)
+		double *matval  = new double[nzcnt];   // value corresponding to index in restriction.
+		char **rownames = new char*[rcnt];     // row labels.
+
+		matbeg[0] = 0;
+		sense[0]  = 'L';
+		rhs[0]    = 1;
+		rownames[0] = new char[40];
+		sprintf(rownames[0], "partition_%d", p);
+
+		int i = 0;
+		for (std::vector<int>::iterator it2 = it->begin(); it2 != it->end(); ++it2) {
+			for (int color = 1; color <= partition_size; ++color) {
+				matind[i] = getVertexIndex(*it2, color, partition_size);
+				matval[i] = 1;
+				++i;
+			}
+		}
+
+		// add restriction
+		status = CPXaddrows(env, lp, ccnt, rcnt, nzcnt, rhs, sense, matbeg, matind, matval, NULL, rownames);
+
+		if (status) {
+			printf("Problem adding restriction with CPXaddrows.\n");
+			exit(1);
+		}
+
+		// free memory
+		delete[] rownames[0];
+		delete[] rhs;
+		delete[] sense;
+		delete[] matbeg;
+		delete[] matind;
+		delete[] matval;
+		delete[] rownames;
+
+		++p;
+
+	}
+
+	// load third restriction
 
 	// CPLEX by default minimizes the objective function. Just in case you want to maximize.
 	// CPXchgobjsen(env, lp, CPX_MAX);
@@ -129,4 +281,8 @@ int main(int argc, char **argv) {
 	}
 
 	return 0;
+}
+
+int getVertexIndex(int id, int color, int partition_size) {
+	return partition_size + ((id-1)*partition_size) + (color-1);
 }
