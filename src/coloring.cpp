@@ -188,7 +188,7 @@ int loadObjectiveFunction(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int par
 	delete[] ctype;
 	delete[] colnames;
 
-	return 1;
+	return 0;
 }
 
 int loadAdyacencyColorRestriction(CPXENVptr& env, CPXLPptr& lp, vector<edge>& edges, int edge_size, int partition_size) {
