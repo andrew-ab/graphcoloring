@@ -2,9 +2,12 @@
 #include <ilcplex/cplex.h>
 
 #include <stdlib.h>
+#include <cassert>
 
+#include <algorithm>
 #include <string>
 #include <vector>
+#include <set>
 
 #define TOL 1e-05
 
@@ -21,11 +24,18 @@ struct edge {
 };
 
 int getVertexIndex(int id, int color, int partition_size);
-int loadObjectiveFunction(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int partition_size);
+inline int fromMatrixToVector(int from, int to, int edge_size);
+inline bool isAdyacent(int from, int to, int edge_size, bool* adyacencyList);
+bool adyacentToAll(int id, int edge_size, bool* adyacencyList, const set<int>& clique);
+bool cliqueNotContained(const set<int>& clique, const set<set<int> >& clique_set);
+
+int loadObjectiveFunction(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int partition_size, char vtype);
 int loadAdyacencyColorRestriction(CPXENVptr& env, CPXLPptr& lp, vector<edge>& edges, int edge_size, int partition_size);
 int loadSingleColorInPartitionRestriction(CPXENVptr& env, CPXLPptr& lp, vector<vector<int> >& partitions, int partition_size);
 int loadAdyacencyColorRestriction(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int partition_size);
+int loadCuttingPlanes(CPXENVptr& env, CPXLPptr& lp, int edge_size, bool* adyacencyList);
 int solveLP(CPXENVptr& env, CPXLPptr& lp, int edge_size, int vertex_size, int partition_size);
+int convertVariableType(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int partition_size, char vtype);
 int setBranchAndBoundConfig(CPXENVptr& env);
 
 // colors array!
@@ -47,9 +57,17 @@ const char* colors[] = {"Blue", "Red", "Green", "Yellow", "Grey", "Green", "Pink
 
 int main(int argc, char **argv) {
 
-	if (argc != 2) {
-		printf("Usage: %s inputFile\n", argv[0]);
+	if (argc != 3) {
+		printf("Usage: type (1,2) %s inputFile\n", argv[0]);
 		exit(1);
+	}
+
+	int solver = atoi(argv[1]);
+
+	if (solver == 1) {
+		printf("Solver: Branch & Bound\n");
+	} else {
+		printf("Solver: Cut & Branch\n");
 	}
 
 	/* read graph input file
@@ -58,7 +76,7 @@ int main(int argc, char **argv) {
 	 * - vector of edges
 	 * - vector of partitions
 	 */
-	FILE* fp = fopen(argv[1], "r");
+	FILE* fp = fopen(argv[2], "r");
 
 	if (fp == NULL) {
 		printf("Invalid input file. \n");
@@ -69,11 +87,16 @@ int main(int argc, char **argv) {
 	int vertex_size, edge_size;
 
 	vector<edge> edges;
+	bool* adyacencyList;
 
 	while (fgets(buf, sizeof(buf), fp) != NULL) {
 		if (buf[0] == 'c') continue;
 		else if (buf[0] == 'p') {
 			sscanf(&buf[7], "%d %d", &vertex_size, &edge_size);
+
+			int adyacency_size = edge_size*edge_size - ((edge_size+1)*edge_size/2);
+			adyacencyList = new bool[adyacency_size]; // can be optimized even more with a bitfield.
+			fill_n(adyacencyList, adyacency_size, false);
 			// printf("vertex_size: %d, edge_size: %d \n", vertex_size, edge_size);
 			// printf("Adding edges! \n");
 		}
@@ -82,6 +105,7 @@ int main(int argc, char **argv) {
 			sscanf(&buf[2], "%d %d", &from, &to);
 			// printf("Edge: (%d,%d) \n", from, to);
 			edges.push_back(edge(from, to));
+			adyacencyList[fromMatrixToVector(from, to, edge_size)] = true;
 		}
 	}
 
@@ -124,10 +148,20 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 
-	loadObjectiveFunction(env, lp, vertex_size, partition_size);
+	setBranchAndBoundConfig(env);
+
+	if (solver == 1) { // pure branch & bound
+		loadObjectiveFunction(env, lp, vertex_size, partition_size, CPX_BINARY);
+	} else {
+		loadObjectiveFunction(env, lp, vertex_size, partition_size, CPX_CONTINUOUS);
+	}
+
 	loadAdyacencyColorRestriction(env, lp, edges, edge_size, partition_size);
 	loadSingleColorInPartitionRestriction(env, lp, partitions, partition_size);
 	loadAdyacencyColorRestriction(env, lp, vertex_size, partition_size);
+	//loadSymmetryBreaker
+
+	if (solver != 1) loadCuttingPlanes(env, lp, edge_size, adyacencyList);
 
 	// write LP formulation to file, great to debug.
 	status = CPXwriteprob(env, lp, "graph.lp", NULL);
@@ -137,8 +171,11 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 
-	setBranchAndBoundConfig(env);
+	if (solver != 1) convertVariableType(env, lp, vertex_size, partition_size, CPX_BINARY); 
+	
 	solveLP(env, lp, edge_size, vertex_size, partition_size);
+
+	delete[] adyacencyList;
 
 	return 0;
 }
@@ -147,7 +184,43 @@ int getVertexIndex(int id, int color, int partition_size) {
 	return partition_size + ((id-1)*partition_size) + (color-1);
 }
 
-int loadObjectiveFunction(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int partition_size) {
+/* since the adyacency matrix is symmetric and the diagonal is not needed, we can simply
+ * store the upper diagonal and get adyacency from a list. the math is quite simple, it
+ * just uses the formula for the sum of integers. ids are numbered starting from 1.
+ */
+inline int fromMatrixToVector(int from, int to, int edge_size) {
+
+	// for speed, many parts of this code are commented, since by our usage we always
+	// know from > to and are in range.
+
+	// assert(from != to && from <= edge_size && to <= edge_size);
+
+	// if (from < to)
+		return from*edge_size - (from+1)*from/2 - (edge_size - to) - 1;
+	// else
+	// 	return to*edge_size - (to+1)*to/2 - (edge_size - from) - 1;
+}
+
+inline bool isAdyacent(int from, int to, int edge_size, bool* adyacencyList) {
+	return adyacencyList[fromMatrixToVector(from, to, edge_size)];
+}
+
+bool adyacentToAll(int id, int edge_size, bool* adyacencyList, const set<int>& clique) {
+	for (set<int>::iterator it = clique.begin(); it != clique.end(); ++it) {
+		if (!isAdyacent(id, *it, edge_size, adyacencyList)) return false;
+	}
+	return true;
+}
+
+bool cliqueNotContained(const set<int>& clique, const set<set<int> >& clique_set) {
+	for (set<set<int> >::iterator it = clique_set.begin(); it != clique_set.end(); ++it) {
+		// by construction, sets are already ordered.
+		if (includes(it->begin(), it->end(), clique.begin(), clique.end())) return false;
+	}
+	return true;
+}
+
+int loadObjectiveFunction(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int partition_size, char vtype) {
 
 	// load objective function
 	int n = partition_size + (vertex_size*partition_size);
@@ -157,7 +230,7 @@ int loadObjectiveFunction(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int par
 
 	for (int i = 0; i < partition_size; ++i) {
 		objfun[i] = 1;
-		ctype[i]	= CPX_BINARY;
+		ctype[i]	= vtype;
 		colnames[i] = new char[10];
 		sprintf(colnames[i], "w_%d", (i+1));
 	}
@@ -166,7 +239,7 @@ int loadObjectiveFunction(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int par
 		for (int color = 1; color <= partition_size; ++color) {
 			int index = getVertexIndex(id, color, partition_size);
 			objfun[index]   = 0;
-			ctype[index]    = CPX_BINARY;
+			ctype[index]    = vtype;
 			colnames[index] = new char[10];
 			sprintf(colnames[index], "x_%d%d", id, color);
 		}
@@ -314,6 +387,36 @@ int loadSingleColorInPartitionRestriction(CPXENVptr& env, CPXLPptr& lp, vector<v
 	return 0;
 }
 
+
+int loadCuttingPlanes(CPXENVptr& env, CPXLPptr& lp, int edge_size, bool* adyacencyList) {
+
+	set<set<int> > clique_set;
+
+	for (int id = 1; id <= edge_size; id++) {
+		set<int> clique;
+		clique.insert(id);
+		for (int id2 = id + 1; id2 <= edge_size; id2++) {
+			if (adyacentToAll(id2, edge_size, adyacencyList, clique)) {
+				clique.insert(id2);
+			}
+		}
+		if (clique.size() > 2) {
+			if (cliqueNotContained(clique, clique_set)) {
+				clique_set.insert(clique);
+			}
+		}
+	}
+
+	for (set<set<int> >::iterator it = clique_set.begin(); it != clique_set.end(); ++it) {
+		cout << "Clique: ";
+		for (set<int>::iterator it2 = it->begin(); it2 != it->end(); ++it2) {
+			cout << *it2 << " ";
+		}
+		cout << endl;
+	}
+
+}
+
 int loadAdyacencyColorRestriction(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int partition_size)  {
 
 	// load third restriction
@@ -444,11 +547,36 @@ int solveLP(CPXENVptr& env, CPXLPptr& lp, int edge_size, int vertex_size, int pa
 	return 0;
 }
 
+int convertVariableType(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int partition_size, char vtype) {
+
+	int n = partition_size + (vertex_size*partition_size);
+	int* indices = new int[n];
+	char* xctype = new char[n];
+
+	for (int i = 0; i < n; i++) {
+		indices[i] = i;
+		xctype[i]  = vtype;
+	}
+	CPXchgctype(env, lp, n, indices, xctype);
+
+	delete[] indices;
+	delete[] xctype;
+
+	return 0;
+}
+
 int setBranchAndBoundConfig(CPXENVptr& env) {
 
 	// CPLEX config
 	// http://www-01.ibm.com/support/knowledgecenter/SSSA5P_12.2.0/ilog.odms.cplex.help/Content/Optimization/Documentation/CPLEX/_pubskel/CPLEX916.html
 	
+	// deactivate pre-processing
+	CPXsetintparam(env, CPX_PARAM_PRESLVND, -1);
+	CPXsetintparam(env, CPX_PARAM_REPEATPRESOLVE, 0);
+	CPXsetintparam(env, CPX_PARAM_RELAXPREIND, 0);
+	CPXsetintparam(env, CPX_PARAM_REDUCE, 0);
+	CPXsetintparam(env, CPX_PARAM_LANDPCUTS, -1);
+
 	// maximize objective function
 	// CPXchgobjsen(env, lp, CPX_MAX);
 
