@@ -36,8 +36,8 @@ int loadAdyacencyColorRestriction(CPXENVptr& env, CPXLPptr& lp, int vertex_size,
 
 int loadCuttingPlanes(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int edge_size, int partition_size, bool* adyacencyList);
 int maximalCliqueFamillyHeuristic(set<set<int> >& clique_familly, int vertex_size, int edge_size, bool* adjacencyList);
-int findAndLoadUnsatisfiedCliqueRestrictions(set<set<int> >& clique_familly, int vertex_size, int partition_size, int n, double* sol);
-
+int findUnsatisfiedCliqueRestrictions(CPXENVptr& env, CPXLPptr& lp, set<set<int> >& clique_familly, int vertex_size, int partition_size, int n, double* sol);
+int loadUnsatisfiedCliqueRestriction(CPXENVptr& env, CPXLPptr& lp, int partition_size, const set<int>& clique, int color, double* sol);
 
 int solveLP(CPXENVptr& env, CPXLPptr& lp, int edge_size, int vertex_size, int partition_size);
 int convertVariableType(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int partition_size, char vtype);
@@ -118,8 +118,7 @@ int main(int argc, char **argv) {
 	srand(time(NULL));
 
 	// asign every vertex to a partition
-	int partition_size = rand() % vertex_size;
-
+	int partition_size = rand() % vertex_size + 1;
 	vector<vector<int> > partitions(partition_size, vector<int>());
 
 	// warning: this procedure doesn't guarantee every partition will have an element.
@@ -132,6 +131,8 @@ int main(int argc, char **argv) {
 	for (std::vector<vector<int> >::iterator it = partitions.begin(); it != partitions.end(); ++it) {
 		if (it->size() == 0) --partition_size;
 	}
+
+	printf("Graph: vertex_size: %d, edge_size: %d, partition_size: %d\n", vertex_size, edge_size, partition_size);
 
 	// start loading LP using CPLEX
 	int status;
@@ -166,11 +167,11 @@ int main(int argc, char **argv) {
 	loadAdyacencyColorRestriction(env, lp, vertex_size, partition_size);
 	//loadSymmetryBreaker
 
-	// // write LP formulation to file, great to debug.
-	status = CPXwriteprob(env, lp, "graph.lp", NULL);
-
 	if (solver != 1) loadCuttingPlanes(env, lp, vertex_size, edge_size, partition_size, adyacencyList);
 		
+	// write LP formulation to file, great to debug.
+	status = CPXwriteprob(env, lp, "graph.lp", NULL);
+
 	if (status) {
 		printf("Problem writing LP problem to file.");
 		exit(1);
@@ -402,8 +403,6 @@ int loadCuttingPlanes(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int edge_si
 
 	printf("Finding Cutting Planes.\n");
 
-	cout << "partition_size: " << partition_size << endl;
-
 	int n = partition_size + (vertex_size*partition_size);
 
 	set<set<int> > clique_familly;
@@ -421,32 +420,18 @@ int loadCuttingPlanes(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int edge_si
 			exit(1);
 		}
 
-		// check solution state
-		int solstat;
-		char statstring[510];
-		CPXCHARptr p;
-		solstat = CPXgetstat(env, lp);
-		p = CPXgetstatstring(env, solstat, statstring);
-		string statstr(statstring);
-		cout << endl << "Optimization result: " << statstring << endl;
-		if (solstat != CPX_STAT_OPTIMAL) {
-			exit(1);
-		}
-
 		status = CPXgetx(env, lp, sol, 0, n - 1);
 
-		for (int id = 1; id <= vertex_size; ++id) {
-			for (int color = 1; color <= partition_size; ++color) {
-				int index = getVertexIndex(id, color, partition_size);
-				if (sol[index] == 0) continue;
-				cout << "x_" << id << " " << color << " = " << sol[index] << endl;
-			}
-		}
-
-		cout << "Find Unsatisfied inequalities!" << endl;
+		// for (int id = 1; id <= vertex_size; ++id) {
+		// 	for (int color = 1; color <= partition_size; ++color) {
+		// 		int index = getVertexIndex(id, color, partition_size);
+		// 		if (sol[index] == 0) continue;
+		// 		cout << "x_" << id << " " << color << " = " << sol[index] << endl;
+		// 	}
+		// }
 
 		// check which elements in the familly do not satisfy the inequality
-		findAndLoadUnsatisfiedCliqueRestrictions(clique_familly, vertex_size, partition_size, n, sol);
+		findUnsatisfiedCliqueRestrictions(env, lp, clique_familly, vertex_size, partition_size, n, sol);
 
 		cutting_plane_iterations--;
 	}
@@ -482,10 +467,12 @@ int maximalCliqueFamillyHeuristic(set<set<int> >& clique_familly, int vertex_siz
 	// 	cout << endl;
 	// }
 
+	printf("Clique Familly Generated.\n");
+
 	return 0;
 }
 
-int findAndLoadUnsatisfiedCliqueRestrictions(set<set<int> >& clique_familly, int vertex_size, int partition_size, int n, double* sol) {
+int findUnsatisfiedCliqueRestrictions(CPXENVptr& env, CPXLPptr& lp, set<set<int> >& clique_familly, int vertex_size, int partition_size, int n, double* sol) {
 	for (set<set<int> >::iterator it = clique_familly.begin(); it != clique_familly.end(); ++it) {
 
 		for (int color = 1; color <= partition_size; ++color) {
@@ -495,12 +482,53 @@ int findAndLoadUnsatisfiedCliqueRestrictions(set<set<int> >& clique_familly, int
 				sum += sol[getVertexIndex(*it2, color, partition_size)];
 			}
 			if (sum > sol[color-1]) {
-				printf("Unsatisfied Clique Restriction Found!\n");
-				// loadCliqueRestriction(env, lp, clique, color);
-				cout << "Sum: " << sum << " w: " << sol[color-1] << endl;
+				// printf("Unsatisfied Clique Restriction Found!\n");
+				loadUnsatisfiedCliqueRestriction(env, lp, partition_size, *it, color, sol);
 			}
 		}
 	}
+
+	return 0;
+}
+
+int loadUnsatisfiedCliqueRestriction(CPXENVptr& env, CPXLPptr& lp, int partition_size, const set<int>& clique, int color, double* sol) {
+
+	int ccnt = 0;
+	int rcnt = 1;
+	int nzcnt = clique.size() + 1;
+
+	double rhs = 0;
+	char sense = 'L';
+
+	int matbeg = 0;
+	int* matind    = new int[clique.size() + 1];
+	double* matval = new double[clique.size() +1]; 
+	char **rowname = new char*[rcnt];
+	rowname[0] = new char[40];
+	sprintf(rowname[0], "unsatisfied_clique");
+
+	matind[0] = color - 1;
+	matval[0] = -sol[0];
+
+	int i = 1;
+	for (set<int>::iterator it = clique.begin(); it != clique.end(); ++it) {
+		matind[i] = getVertexIndex(*it, color, partition_size);
+		matval[i] = sol[getVertexIndex(*it, color, partition_size)];
+		++i;
+	}
+
+	// add restriction
+	int status = CPXaddrows(env, lp, ccnt, rcnt, nzcnt, &rhs, &sense, &matbeg, matind, matval, NULL, rowname);
+
+	if (status) {
+		printf("Problem adding restriction with CPXaddrows.\n");
+		exit(1);
+	}
+
+	// free memory
+	delete[] matind;
+	delete[] matval;
+
 	return 0;
 }
 
@@ -564,6 +592,8 @@ int loadAdyacencyColorRestriction(CPXENVptr& env, CPXLPptr& lp, int vertex_size,
 
 int solveLP(CPXENVptr& env, CPXLPptr& lp, int edge_size, int vertex_size, int partition_size) {
 
+	printf("Solving MIP.\n");
+
 	int n = partition_size + (vertex_size*partition_size); // amount of total variables
 
 	// calculate runtime
@@ -612,7 +642,6 @@ int solveLP(CPXENVptr& env, CPXLPptr& lp, int edge_size, int vertex_size, int pa
 	// write solutions to current window
 	cout << endl << "Optimization result: " << statstring << endl;
 	cout << "Runtime: " << (endtime - inittime) << endl;
-	printf("Graph: vertex_size: %d, edge_size: %d, partition_size: %d\n", vertex_size, edge_size, partition_size);
 	cout << "Colors used: " << objval << endl;
 	for (int color = 1; color <= partition_size; ++color) {
 		if (sol[color-1] == 1) {
@@ -680,7 +709,7 @@ int setBranchAndBoundConfig(CPXENVptr& env) {
 	CPXsetintparam(env, CPX_PARAM_MIPSEARCH, CPX_MIPSEARCH_TRADITIONAL);
 
 	// use only one thread for experimentation
-	CPXsetintparam(env, CPX_PARAM_THREADS, 1);
+	// CPXsetintparam(env, CPX_PARAM_THREADS, 1);
 
 	// do not add cutting planes
 	CPXsetintparam(env, CPX_PARAM_EACHCUTLIM, CPX_OFF);
@@ -689,7 +718,7 @@ int setBranchAndBoundConfig(CPXENVptr& env) {
 	CPXsetintparam(env, CPX_PARAM_FRACCUTS, -1);
 
 	// measure time in CPU time
-	CPXsetintparam(env, CPX_PARAM_CLOCKTYPE, CPX_ON);
+	// CPXsetintparam(env, CPX_PARAM_CLOCKTYPE, CPX_ON);
 
 	return 0;
 }
