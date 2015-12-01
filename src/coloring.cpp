@@ -33,7 +33,12 @@ int loadObjectiveFunction(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int par
 int loadAdyacencyColorRestriction(CPXENVptr& env, CPXLPptr& lp, vector<edge>& edges, int edge_size, int partition_size);
 int loadSingleColorInPartitionRestriction(CPXENVptr& env, CPXLPptr& lp, vector<vector<int> >& partitions, int partition_size);
 int loadAdyacencyColorRestriction(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int partition_size);
-int loadCuttingPlanes(CPXENVptr& env, CPXLPptr& lp, int edge_size, bool* adyacencyList);
+
+int loadCuttingPlanes(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int edge_size, int partition_size, bool* adyacencyList);
+int maximalCliqueFamillyHeuristic(set<set<int> >& clique_familly, int vertex_size, int edge_size, bool* adjacencyList);
+int findAndLoadUnsatisfiedCliqueRestrictions(set<set<int> >& clique_familly, int vertex_size, int partition_size, int n, double* sol);
+
+
 int solveLP(CPXENVptr& env, CPXLPptr& lp, int edge_size, int vertex_size, int partition_size);
 int convertVariableType(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int partition_size, char vtype);
 int setBranchAndBoundConfig(CPXENVptr& env);
@@ -161,10 +166,10 @@ int main(int argc, char **argv) {
 	loadAdyacencyColorRestriction(env, lp, vertex_size, partition_size);
 	//loadSymmetryBreaker
 
-	if (solver != 1) loadCuttingPlanes(env, lp, edge_size, adyacencyList);
-
-	// write LP formulation to file, great to debug.
+	// // write LP formulation to file, great to debug.
 	status = CPXwriteprob(env, lp, "graph.lp", NULL);
+
+	if (solver != 1) loadCuttingPlanes(env, lp, vertex_size, edge_size, partition_size, adyacencyList);
 		
 	if (status) {
 		printf("Problem writing LP problem to file.");
@@ -191,7 +196,7 @@ int getVertexIndex(int id, int color, int partition_size) {
 inline int fromMatrixToVector(int from, int to, int edge_size) {
 
 	// for speed, many parts of this code are commented, since by our usage we always
-	// know from > to and are in range.
+	// know from < to and are in range.
 
 	// assert(from != to && from <= edge_size && to <= edge_size);
 
@@ -225,11 +230,13 @@ int loadObjectiveFunction(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int par
 	// load objective function
 	int n = partition_size + (vertex_size*partition_size);
 	double *objfun	= new double[n];
+	double *ub      = new double[n];
 	char	 *ctype	= new char[n];
 	char **colnames = new char*[n];
 
 	for (int i = 0; i < partition_size; ++i) {
 		objfun[i] = 1;
+		ub[i] = 1;
 		ctype[i]	= vtype;
 		colnames[i] = new char[10];
 		sprintf(colnames[i], "w_%d", (i+1));
@@ -239,13 +246,15 @@ int loadObjectiveFunction(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int par
 		for (int color = 1; color <= partition_size; ++color) {
 			int index = getVertexIndex(id, color, partition_size);
 			objfun[index]   = 0;
+			ub[index] = 1;
 			ctype[index]    = vtype;
 			colnames[index] = new char[10];
 			sprintf(colnames[index], "x_%d%d", id, color);
 		}
 	}
 
-	int status = CPXnewcols(env, lp, n, objfun, NULL, NULL, ctype, colnames);
+	// CPLEX bug? If you set ctype, it doesn't identify the problem as continous.
+	int status = CPXnewcols(env, lp, n, objfun, NULL, ub, NULL, colnames);
 
 	if (status) {
 		printf("Problem adding variables with CPXnewcols.\n");
@@ -258,6 +267,7 @@ int loadObjectiveFunction(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int par
 	}
 	
 	delete[] objfun;
+	delete[] ub;
 	delete[] ctype;
 	delete[] colnames;
 
@@ -388,33 +398,110 @@ int loadSingleColorInPartitionRestriction(CPXENVptr& env, CPXLPptr& lp, vector<v
 }
 
 
-int loadCuttingPlanes(CPXENVptr& env, CPXLPptr& lp, int edge_size, bool* adyacencyList) {
+int loadCuttingPlanes(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int edge_size, int partition_size, bool* adyacencyList) {
 
-	set<set<int> > clique_set;
+	printf("Finding Cutting Planes.\n");
 
-	for (int id = 1; id <= edge_size; id++) {
+	cout << "partition_size: " << partition_size << endl;
+
+	int n = partition_size + (vertex_size*partition_size);
+
+	set<set<int> > clique_familly;
+	maximalCliqueFamillyHeuristic(clique_familly, vertex_size, edge_size, adyacencyList);
+
+	double *sol = new double[n];
+	int cutting_plane_iterations = 1;
+	while (cutting_plane_iterations > 0) {
+
+		// solve LP
+		int status = CPXlpopt(env, lp);
+
+		if (status) {
+			cerr << "CPLEX error: " << status << endl;
+			exit(1);
+		}
+
+		// check solution state
+		int solstat;
+		char statstring[510];
+		CPXCHARptr p;
+		solstat = CPXgetstat(env, lp);
+		p = CPXgetstatstring(env, solstat, statstring);
+		string statstr(statstring);
+		cout << endl << "Optimization result: " << statstring << endl;
+		if (solstat != CPX_STAT_OPTIMAL) {
+			exit(1);
+		}
+
+		status = CPXgetx(env, lp, sol, 0, n - 1);
+
+		for (int id = 1; id <= vertex_size; ++id) {
+			for (int color = 1; color <= partition_size; ++color) {
+				int index = getVertexIndex(id, color, partition_size);
+				if (sol[index] == 0) continue;
+				cout << "x_" << id << " " << color << " = " << sol[index] << endl;
+			}
+		}
+
+		cout << "Find Unsatisfied inequalities!" << endl;
+
+		// check which elements in the familly do not satisfy the inequality
+		findAndLoadUnsatisfiedCliqueRestrictions(clique_familly, vertex_size, partition_size, n, sol);
+
+		cutting_plane_iterations--;
+	}
+
+	return 0;
+}
+
+int maximalCliqueFamillyHeuristic(set<set<int> >& clique_familly, int vertex_size, int edge_size, bool* adjacencyList) {
+
+	printf("Maximal Clique Heuristic.\n");
+
+	for (int id = 1; id <= vertex_size; id++) {
 		set<int> clique;
 		clique.insert(id);
-		for (int id2 = id + 1; id2 <= edge_size; id2++) {
-			if (adyacentToAll(id2, edge_size, adyacencyList, clique)) {
+		for (int id2 = id + 1; id2 <= vertex_size; id2++) {
+			if (adyacentToAll(id2, edge_size, adjacencyList, clique)) {
 				clique.insert(id2);
 			}
 		}
 		if (clique.size() > 2) {
-			if (cliqueNotContained(clique, clique_set)) {
-				clique_set.insert(clique);
+			if (cliqueNotContained(clique, clique_familly)) {
+				clique_familly.insert(clique);
 			}
 		}
 	}
 
-	for (set<set<int> >::iterator it = clique_set.begin(); it != clique_set.end(); ++it) {
-		cout << "Clique: ";
-		for (set<int>::iterator it2 = it->begin(); it2 != it->end(); ++it2) {
-			cout << *it2 << " ";
-		}
-		cout << endl;
-	}
+	// print the familly
+	// for (set<set<int> >::iterator it = clique_familly.begin(); it != clique_familly.end(); ++it) {
+	// 	cout << "Clique: ";
+	// 	for (set<int>::iterator it2 = it->begin(); it2 != it->end(); ++it2) {
+	// 		cout << *it2 << " ";
+	// 	}
+	// 	cout << endl;
+	// }
 
+	return 0;
+}
+
+int findAndLoadUnsatisfiedCliqueRestrictions(set<set<int> >& clique_familly, int vertex_size, int partition_size, int n, double* sol) {
+	for (set<set<int> >::iterator it = clique_familly.begin(); it != clique_familly.end(); ++it) {
+
+		for (int color = 1; color <= partition_size; ++color) {
+			double sum = 0;
+			for (set<int>::iterator it2 = it->begin(); it2 != it->end(); ++it2) {
+				double coef = sol[getVertexIndex(*it2, color, partition_size)];
+				sum += sol[getVertexIndex(*it2, color, partition_size)];
+			}
+			if (sum > sol[color-1]) {
+				printf("Unsatisfied Clique Restriction Found!\n");
+				// loadCliqueRestriction(env, lp, clique, color);
+				cout << "Sum: " << sum << " w: " << sol[color-1] << endl;
+			}
+		}
+	}
+	return 0;
 }
 
 int loadAdyacencyColorRestriction(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int partition_size)  {
