@@ -42,6 +42,7 @@ int loadUnsatisfiedCliqueRestriction(CPXENVptr& env, CPXLPptr& lp, int partition
 int solveLP(CPXENVptr& env, CPXLPptr& lp, int edge_size, int vertex_size, int partition_size);
 int convertVariableType(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int partition_size, char vtype);
 int setBranchAndBoundConfig(CPXENVptr& env);
+int checkStatus(CPXENVptr& env, int status);
 
 // colors array!
 const char* colors[] = {"Blue", "Red", "Green", "Yellow", "Grey", "Green", "Pink", "AliceBlue","AntiqueWhite","Aqua","Aquamarine","Azure","Beige",
@@ -84,7 +85,7 @@ int main(int argc, char **argv) {
 	FILE* fp = fopen(argv[2], "r");
 
 	if (fp == NULL) {
-		printf("Invalid input file. \n");
+		printf("Invalid input file.\n");
 		exit(1);
 	}
 
@@ -115,7 +116,7 @@ int main(int argc, char **argv) {
 	}
 
 	// set random seed
-	srand(time(NULL));
+	// srand(time(NULL));
 
 	// asign every vertex to a partition
 	int partition_size = rand() % vertex_size + 1;
@@ -140,19 +141,11 @@ int main(int argc, char **argv) {
 	CPXLPptr lp;   // pointer to the lp.
 
 	env = CPXopenCPLEX(&status); // create enviroment
-
-	if (env == NULL) {
-		printf("Error creating enviroment.\n");
-		exit(1);
-	}
+	checkStatus(env, status);
 
 	// create LP
 	lp = CPXcreateprob(env, &status, "Instance of partitioned graph coloring.");
-
-	if (lp == NULL) {
-		printf("Error creating the LP.\n");
-		exit(1);
-	}
+	checkStatus(env, status);
 
 	setBranchAndBoundConfig(env);
 
@@ -171,13 +164,9 @@ int main(int argc, char **argv) {
 		
 	// write LP formulation to file, great to debug.
 	status = CPXwriteprob(env, lp, "graph.lp", NULL);
+	checkStatus(env, status);
 
-	if (status) {
-		printf("Problem writing LP problem to file.");
-		exit(1);
-	}
-
-	if (solver != 1) convertVariableType(env, lp, vertex_size, partition_size, CPX_BINARY); 
+	convertVariableType(env, lp, vertex_size, partition_size, CPX_BINARY); 
 	
 	solveLP(env, lp, edge_size, vertex_size, partition_size);
 
@@ -256,11 +245,7 @@ int loadObjectiveFunction(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int par
 
 	// CPLEX bug? If you set ctype, it doesn't identify the problem as continous.
 	int status = CPXnewcols(env, lp, n, objfun, NULL, ub, NULL, colnames);
-
-	if (status) {
-		printf("Problem adding variables with CPXnewcols.\n");
-		exit(1);
-	}
+	checkStatus(env, status);
 	
 	// free memory
 	for (int i = 0; i < n; ++i) {
@@ -317,11 +302,7 @@ int loadAdyacencyColorRestriction(CPXENVptr& env, CPXLPptr& lp, vector<edge>& ed
 
 	// add restriction
 	int status = CPXaddrows(env, lp, ccnt, rcnt, nzcnt, rhs, sense, matbeg, matind, matval, NULL, rownames);
-
-	if (status) {
-		printf("Problem adding restriction with CPXaddrows.\n");
-		exit(1);
-	}
+	checkStatus(env, status);
 
 	// free memory
 	for (int i = 0; i < rcnt; ++i) {
@@ -377,11 +358,7 @@ int loadSingleColorInPartitionRestriction(CPXENVptr& env, CPXLPptr& lp, vector<v
 
 		// add restriction
 		int status = CPXaddrows(env, lp, ccnt, rcnt, nzcnt, rhs, sense, matbeg, matind, matval, NULL, rownames);
-
-		if (status) {
-			printf("Problem adding restriction with CPXaddrows.\n");
-			exit(1);
-		}
+		checkStatus(env, status);
 
 		// free memory
 		delete[] rownames[0];
@@ -414,13 +391,10 @@ int loadCuttingPlanes(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int edge_si
 
 		// solve LP
 		int status = CPXlpopt(env, lp);
-
-		if (status) {
-			cerr << "CPLEX error: " << status << endl;
-			exit(1);
-		}
+		checkStatus(env, status);
 
 		status = CPXgetx(env, lp, sol, 0, n - 1);
+		checkStatus(env, status);
 
 		// for (int id = 1; id <= vertex_size; ++id) {
 		// 	for (int color = 1; color <= partition_size; ++color) {
@@ -519,15 +493,13 @@ int loadUnsatisfiedCliqueRestriction(CPXENVptr& env, CPXLPptr& lp, int partition
 
 	// add restriction
 	int status = CPXaddrows(env, lp, ccnt, rcnt, nzcnt, &rhs, &sense, &matbeg, matind, matval, NULL, rowname);
-
-	if (status) {
-		printf("Problem adding restriction with CPXaddrows.\n");
-		exit(1);
-	}
+	checkStatus(env, status);
 
 	// free memory
 	delete[] matind;
 	delete[] matval;
+	delete rowname[0];
+	delete rowname;
 
 	return 0;
 }
@@ -569,11 +541,7 @@ int loadAdyacencyColorRestriction(CPXENVptr& env, CPXLPptr& lp, int vertex_size,
 
 	// add restriction
 	int status = CPXaddrows(env, lp, ccnt, rcnt, nzcnt, rhs, sense, matbeg, matind, matval, NULL, rownames);
-
-	if (status) {
-		printf("Problem adding restriction with CPXaddrows.\n");
-		exit(1);
-	}
+	checkStatus(env, status);
 
 	// free memory
 	for (int i = 0; i < rcnt; ++i) {
@@ -599,16 +567,14 @@ int solveLP(CPXENVptr& env, CPXLPptr& lp, int edge_size, int vertex_size, int pa
 	// calculate runtime
 	double inittime, endtime;
 	int status = CPXgettime(env, &inittime);
+	checkStatus(env, status);
 
 	// solve LP
 	status = CPXmipopt(env, lp);
+	checkStatus(env, status);
 
 	status = CPXgettime(env, &endtime);
-
-	if (status) {
-		printf("Optimization failed.\n");
-		exit(1);
-	}
+	checkStatus(env, status);
 
 	// check solution state
 	int solstat;
@@ -619,25 +585,19 @@ int solveLP(CPXENVptr& env, CPXLPptr& lp, int edge_size, int vertex_size, int pa
 	string statstr(statstring);
 	if (solstat != CPXMIP_OPTIMAL && solstat != CPXMIP_OPTIMAL_TOL &&
 		solstat != CPXMIP_NODE_LIM_FEAS && solstat != CPXMIP_TIME_LIM_FEAS) {
+		// printf("Optimization failed.\n");
+		cout << "Optimization failed: " << solstat << endl;
 		exit(1);
 	}
 
 	double objval;
 	status = CPXgetobjval(env, lp, &objval);
-		
-	if (status) {
-		printf("Problem obtaining optimal solution.\n");
-		exit(1);
-	}
-	
+	checkStatus(env, status);
+
 	// get values of all solutions
 	double *sol = new double[n];
 	status = CPXgetx(env, lp, sol, 0, n - 1);
-
-	if (status) {
-		printf("Problem obtaining the solution of the LP.\n");
-		exit(1);
-	}
+	checkStatus(env, status);
 
 	// write solutions to current window
 	cout << endl << "Optimization result: " << statstring << endl;
@@ -709,7 +669,7 @@ int setBranchAndBoundConfig(CPXENVptr& env) {
 	CPXsetintparam(env, CPX_PARAM_MIPSEARCH, CPX_MIPSEARCH_TRADITIONAL);
 
 	// use only one thread for experimentation
-	// CPXsetintparam(env, CPX_PARAM_THREADS, 1);
+	CPXsetintparam(env, CPX_PARAM_THREADS, 1);
 
 	// do not add cutting planes
 	CPXsetintparam(env, CPX_PARAM_EACHCUTLIM, CPX_OFF);
@@ -720,5 +680,16 @@ int setBranchAndBoundConfig(CPXENVptr& env) {
 	// measure time in CPU time
 	// CPXsetintparam(env, CPX_PARAM_CLOCKTYPE, CPX_ON);
 
+	return 0;
+}
+
+
+int checkStatus(CPXENVptr& env, int status) {
+	if (status) {
+		char buffer[100];
+		CPXgeterrorstring(env, status, buffer);
+		printf("%s\n", buffer);
+		exit(1);
+	}
 	return 0;
 }
