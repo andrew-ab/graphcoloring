@@ -10,19 +10,9 @@
 #include <set>
 
 #define TOL 1e-05
-#define CUTTING_PLANE_ITERATIONS 3
+#define CUTTING_PLANE_ITERATIONS 1
 
 ILOSTLBEGIN // macro to define namespace
-
-struct edge {
-	int from;
-	int to;
-
-	edge(int a, int b) {
-		from = a;
-		to = b;
-	}
-};
 
 // helper functions
 int getVertexIndex(int id, int color, int partition_size);
@@ -33,9 +23,10 @@ bool cliqueNotContained(const set<int>& clique, const set<set<int> >& clique_set
 
 // load LP
 int loadObjectiveFunction(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int partition_size, char vtype);
-int loadAdyacencyColorRestriction(CPXENVptr& env, CPXLPptr& lp, vector<edge>& edges, int edge_size, int partition_size);
+int loadAdyacencyColorRestriction(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int edge_size, int partition_size, bool* adyacencyList);
 int loadSingleColorInPartitionRestriction(CPXENVptr& env, CPXLPptr& lp, vector<vector<int> >& partitions, int partition_size);
 int loadAdyacencyColorRestriction(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int partition_size);
+int loadSymmetryBreaker(CPXENVptr& env, CPXLPptr& lp, int partition_size);
 
 // cutting planes
 int loadCuttingPlanes(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int edge_size, int partition_size, bool* adyacencyList);
@@ -102,27 +93,31 @@ int main(int argc, char **argv) {
 	char buf[100];
 	int vertex_size, edge_size;
 
-	vector<edge> edges;
-	bool* adyacencyList;
+	set<pair<int,int> > edges; // sometimes we have to filter directed graphs
 
 	while (fgets(buf, sizeof(buf), fp) != NULL) {
 		if (buf[0] == 'c') continue;
 		else if (buf[0] == 'p') {
 			sscanf(&buf[7], "%d %d", &vertex_size, &edge_size);
-
-			int adyacency_size = edge_size*edge_size - ((edge_size+1)*edge_size/2);
-			adyacencyList = new bool[adyacency_size]; // can be optimized even more with a bitfield.
-			fill_n(adyacencyList, adyacency_size, false);
-			// printf("vertex_size: %d, edge_size: %d \n", vertex_size, edge_size);
-			// printf("Adding edges! \n");
 		}
 		else if (buf[0] == 'e') {
 			int from, to;
 			sscanf(&buf[2], "%d %d", &from, &to);
-			// printf("Edge: (%d,%d) \n", from, to);
-			edges.push_back(edge(from, to));
-			adyacencyList[fromMatrixToVector(from, to, edge_size)] = true;
+			if (from < to) {
+				edges.insert(pair<int,int>(from, to));
+			} else {
+				edges.insert(pair<int,int>(to, from));
+			}
 		}
+	}
+
+	// build adyacency list
+	edge_size = edges.size();
+	int adyacency_size = edge_size*edge_size - ((edge_size+1)*edge_size/2);
+	bool* adyacencyList = new bool[adyacency_size]; // can be optimized even more with a bitfield.
+	fill_n(adyacencyList, adyacency_size, false);
+	for (set<pair<int,int> >::iterator it = edges.begin(); it != edges.end(); ++it) {
+		adyacencyList[fromMatrixToVector(it->first, it->second, edge_size)] = true;
 	}
 
 	// set random seed
@@ -165,10 +160,10 @@ int main(int argc, char **argv) {
 		loadObjectiveFunction(env, lp, vertex_size, partition_size, CPX_CONTINUOUS);
 	}
 
-	loadAdyacencyColorRestriction(env, lp, edges, edge_size, partition_size);
+	loadAdyacencyColorRestriction(env, lp, vertex_size, edge_size, partition_size, adyacencyList);
 	loadSingleColorInPartitionRestriction(env, lp, partitions, partition_size);
 	loadAdyacencyColorRestriction(env, lp, vertex_size, partition_size);
-	//loadSymmetryBreaker
+	loadSymmetryBreaker(env, lp, partition_size);
 
 	if (solver != 1) loadCuttingPlanes(env, lp, vertex_size, edge_size, partition_size, adyacencyList);
 		
@@ -270,7 +265,7 @@ int loadObjectiveFunction(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int par
 	return 0;
 }
 
-int loadAdyacencyColorRestriction(CPXENVptr& env, CPXLPptr& lp, vector<edge>& edges, int edge_size, int partition_size) {
+int loadAdyacencyColorRestriction(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int edge_size, int partition_size, bool* adyacencyList) {
 
 	// load first restriction
 	int ccnt = 0;                          // new columns being added.
@@ -286,24 +281,27 @@ int loadAdyacencyColorRestriction(CPXENVptr& env, CPXLPptr& lp, vector<edge>& ed
 	char **rownames = new char*[rcnt];     // row labels.
 
 	int i = 0;
-	for (std::vector<edge>::iterator it = edges.begin(); it != edges.end(); ++it) {
-		int from = it->from;
-		int to   = it->to;
-		for (int color = 1; color <= partition_size; ++color) {
-			matbeg[i] = i*2;
+	for (int from = 1; from <= vertex_size; ++from) {
+		for (int to = from + 1; to <= vertex_size; ++to) {
 
-			matind[i*2]   = getVertexIndex(from, color, partition_size);
-			matind[i*2+1] = getVertexIndex(to  , color, partition_size);
+			if (!isAdyacent(from, to, edge_size, adyacencyList)) continue;
 
-			matval[i*2]   = 1;
-			matval[i*2+1] = 1;
+			for (int color = 1; color <= partition_size; ++color) {
+				matbeg[i] = i*2;
 
-			rhs[i] = 1;
-			sense[i] = 'L';
-			rownames[i] = new char[40];
-			sprintf(rownames[i], "%s", colors[color-1]);
+				matind[i*2]   = getVertexIndex(from, color, partition_size);
+				matind[i*2+1] = getVertexIndex(to  , color, partition_size);
 
-			++i;
+				matval[i*2]   = 1;
+				matval[i*2+1] = 1;
+
+				rhs[i] = 1;
+				sense[i] = 'L';
+				rownames[i] = new char[40];
+				sprintf(rownames[i], "%s", colors[color-1]);
+
+				++i;
+			}
 		}
 	}
 
@@ -385,10 +383,63 @@ int loadSingleColorInPartitionRestriction(CPXENVptr& env, CPXLPptr& lp, vector<v
 	return 0;
 }
 
+int loadSymmetryBreaker(CPXENVptr& env, CPXLPptr& lp, int partition_size) {
+
+	int ccnt = 0;                          // new columns being added.
+	int rcnt = partition_size - 1;         // new rows being added.
+	int nzcnt = 2*rcnt;                    // nonzero constraint coefficients being added.
+
+	double* rhs = new double[rcnt];        // independent term in restrictions.
+	char *sense = new char[rcnt];          // sense of restriction inequality.
+
+	int *matbeg = new int[rcnt];           // array position where each restriction starts in matind and matval.
+	int *matind = new int[rcnt*2];         // index of variables != 0 in restriction (each var has an index defined above)
+	double *matval  = new double[rcnt*2];  // value corresponding to index in restriction.
+	char **rownames = new char*[rcnt];     // row labels.
+
+	int i = 0;
+	for (int color = 0; color < partition_size - 1; ++color) {
+		matbeg[i] = i*2;
+		matind[i*2]   = color;
+		matind[i*2+1] = color + 1;
+		matval[i*2]   = -1;
+		matval[i*2+1] = 1;
+
+		rhs[i] = 0;
+		sense[i] = 'L';
+		rownames[i] = new char[40];
+		sprintf(rownames[i], "%s", "symmetry_breaker");
+
+		++i;
+	}
+
+
+	// add restriction
+	int status = CPXaddrows(env, lp, ccnt, rcnt, nzcnt, rhs, sense, matbeg, matind, matval, NULL, rownames);
+	checkStatus(env, status);
+
+	// free memory
+	for (int i = 0; i < rcnt; ++i) {
+		delete[] rownames[i];
+	}
+	
+	delete[] rhs;
+	delete[] sense;
+	delete[] matbeg;
+	delete[] matind;
+	delete[] matval;
+	delete[] rownames;
+
+	return 0;
+}
 
 int loadCuttingPlanes(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int edge_size, int partition_size, bool* adyacencyList) {
 
 	printf("Finding Cutting Planes.\n");
+
+	// calculate runtime
+	double inittime, endtime;
+	int status = CPXgettime(env, &inittime);
 
 	int n = partition_size + (vertex_size*partition_size);
 
@@ -406,7 +457,7 @@ int loadCuttingPlanes(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int edge_si
 		printf("Iteration %d\n", iteration);
 
 		// solve LP
-		int status = CPXlpopt(env, lp);
+		status = CPXlpopt(env, lp);
 		checkStatus(env, status);
 
 		status = CPXgetx(env, lp, sol, 0, n - 1);
@@ -421,14 +472,23 @@ int loadCuttingPlanes(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int edge_si
 		// }
 
 		// check which elements in the familly do not satisfy the inequality
-		unsatisfied_restrictions += findUnsatisfiedCliqueRestrictions(env, lp, clique_familly, vertex_size, partition_size, n, sol);
-		unsatisfied_restrictions += findUnsatisfiedOddholeRestrictions(env, lp, oddhole_familly, vertex_size, partition_size, n, sol);
+		if (clique_familly.size() > 0) {
+			unsatisfied_restrictions += findUnsatisfiedCliqueRestrictions(env, lp, clique_familly, vertex_size, partition_size, n, sol);
+		}
+
+		if (oddhole_familly.size() > 0) {
+			unsatisfied_restrictions += findUnsatisfiedOddholeRestrictions(env, lp, oddhole_familly, vertex_size, partition_size, n, sol);
+		}
 
 		if (unsatisfied_restrictions == 0) break;
 
 		unsatisfied_restrictions = 0;
 		iteration++;
 	}
+
+	status = CPXgettime(env, &endtime);
+	double elapsed_time = endtime-inittime;
+	cout << "Time taken to add cutting planes: " << elapsed_time << endl;
 
 	return 0;
 }
@@ -691,7 +751,7 @@ int loadAdyacencyColorRestriction(CPXENVptr& env, CPXLPptr& lp, int vertex_size,
 
 int solveLP(CPXENVptr& env, CPXLPptr& lp, int edge_size, int vertex_size, int partition_size) {
 
-	printf("Solving MIP.\n");
+	printf("\nSolving MIP.\n");
 
 	int n = partition_size + (vertex_size*partition_size); // amount of total variables
 
@@ -731,8 +791,8 @@ int solveLP(CPXENVptr& env, CPXLPptr& lp, int edge_size, int vertex_size, int pa
 	checkStatus(env, status);
 
 	// write solutions to current window
-	cout << endl << "Optimization result: " << statstring << endl;
-	cout << "Runtime: " << (endtime - inittime) << endl;
+	cout << "Optimization result: " << statstring << endl;
+	cout << "Time taken to solve final LP: " << (endtime - inittime) << endl;
 	cout << "Colors used: " << objval << endl;
 	for (int color = 1; color <= partition_size; ++color) {
 		if (sol[color-1] == 1) {
