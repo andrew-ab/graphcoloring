@@ -89,8 +89,73 @@ Por teoremas de coloreo (que se prueban en general por induccion), sabemos que e
 
 \subsection{Planos de Corte}
 
-Luego de relajar el PLEM, los algoritmos de separacion buscan acotar el espacio de busqueda para que se parezca mas a la capsula convexa. Existen algoritmos de separacion exactos y heuristicos. Los algoritmos heuristicos, luego de resolver la relajacion del problema entero y encontrar una solucion optima $x^*$, retornan una o mas desigualdades de la clase violadas por alguna familia de desigualdades. Por ser un algoritmo heuristico, es posible que exista una desigualdad de la clase violada aunque el procedimiento no sea capaz de encontrarla. Si se encuentra una desigualdad que es violada por la solucion optima de la relajacion, se agrega esta nueva restriccion y se vuelve a resolver el programa lineal. Este procedimiento se conoce como algoritmo de plano de corte. Si una solucion optima al problema existe, este tipo de algoritmo no necesariamente la encuentra. Por ejemplo, las heuristicas que encuentran desigualdades validas pueden fallar y el algoritmo no puede continuar.
+Luego de relajar el PLEM, los algoritmos de separacion buscan acotar el espacio de busqueda para que se parezca mas a la capsula convexa. Existen algoritmos de separacion exactos y heuristicos. Los algoritmos heuristicos, luego de resolver la relajacion del problema entero y encontrar una solucion optima $x^*$, retornan una o mas desigualdades de la clase violadas por alguna familia de desigualdades.
 
-\subsubsection{Heuristica de Separacion para Clique}
+Dado que es un algoritmo heuristico, es posible que exista una desigualdad de la clase violada aunque el procedimiento no sea capaz de encontrarla. Si se encuentra una desigualdad que es violada por la solucion optima de la relajacion, se agrega esta nueva restriccion y se vuelve a resolver el programa lineal. Este procedimiento se conoce como algoritmo de plano de corte. Si una solucion optima al problema existe, este tipo de algoritmo no necesariamente la encuentra. Por ejemplo, las heuristicas que encuentran desigualdades validas pueden fallar y el algoritmo no puede continuar.
+
+\subsection{Heuristicas}
+
+Las heuristicas que enunciaremos a continuacion utilizan algunas propiedades de la representacion de nuestro grafo, ya sea para su construccion o para lograr una mejor complejidad temporal y espacial.
+
+En primer lugar, representamos la estructura del grafo mediante una matriz de adyacencias. Esta matriz se implemento utilizando una lista. Dado que la matriz de adyacencias es simetrica y la diagonal no es necesaria para este problema en particular, guardamos solo la parte triangular superior de la misma. Esto nos da la ventaja de poder saber si dos vertices son adyacentes o no en \order{1} y reduce la complejidad espacial de forma considerable. La formula que utilizamos para generar la biyeccion entre arista e indice en la lista se puede ver claramente en el codigo. La idea es bastante simple y se basa principalmente en usar la expresion para la suma de enteros consecutivos.
+
+En segundo lugar, numeramos todos los vertices con enteros comenzando con $id = 1$. Por construccion, luego nuestras heuristicas nos garantizaran que nuestro conjunto de indices que representa a un miembro de una familia esta ordenado. Esto es muy ventajoso en el sentido que podemos saber si un nuevo potencial miembro de la familia ya ha sido agregrado a la misma. Las familias se generan solo una vez al principio, y luego en diferentes iteraciones de los algoritmos de planos de corte se verifica si son violadas para ser agregadas como restricciones.
+
+\pagebreak
+
+\subsubsection{Heuristica de Separacion para Clique Maximal}
+
+Para esta heuristica, lo que hacemos es recorrer los vertices en orden. En primer lugar, tomamos el primer vertice, y luego comenzamos a recorrer la lista hasta que encontramos un vertice adyacente. Lo agregamos al conjunto que representa al miembro de la clique, y seguimos agregando elemento en orden de forma que cumplan que son adyacentes con todos los que ya hemos agregado. Una vez recorrida toda la lista, agregamos este conjunto a la familia. Luego comenzamos a generar una nueva familia a partir del segundo vertice, y asi sucesivamente. Este algoritmo se puede ilustrar con el siguiente pseudocodigo:
+
+\begin{algorithm}
+\caption{Algoritmo para generar familia de cliques maximales}
+\begin{algorithmic}[1]
+\Procedure{generateCliqueFamilly}{$V,E$}
+\State $set<set<int>> clique\_familly$
+\For {$id \leftarrow 1, |V|$}
+	\State $set<int> clique$
+	\State clique.insert(id)
+	\For {$id2 \leftarrow id + 1, |V|$}
+		\If {clique.adyacentToAll(id2)}
+			\State clique.insert(id2)
+		\EndIf
+	\EndFor
+	\If {$\neg clique\_familly.isContained(clique)$}
+		\State clique\_familly.insert(clique)
+	\EndIf
+\EndFor
+
+\EndProcedure
+\end{algorithmic}
+\end{algorithm}
+
+Notar que en la practica solo consideramos cliques de tamanio mayor a 2, dado que si no se pisan con las restricciones de adyacencia del LP.
 
 \subsubsection{Heuristica de Separacion para Aujero Impar}
+
+Para esta heuristica, seguimos un procedimiento similar al anterior. Recorremos los vertices en orden, y los vamos agregando si son adyacentes. Al final, el conjunto de vertices resultante es un camino. Luego, vemos si el ultimo elemento del camino es adyacente al primero y si el camino tiene longitud impar. Si esto sucede, agregamos el conjunto a la familia. Si no sucede, quitamos el ultimo elemento y verificamos nuevamente la condicion hasta que se satisfaga. Este procedimiento se puede ilustrar con el siguiente pseudocodigo:
+
+\begin{algorithm}
+\caption{Algoritmo para generar familia de aujeros impares}
+\begin{algorithmic}[1]
+\Procedure{generateOddholeFamilly}{$V,E$}
+\State $set<set<int>> oddhole\_familly$
+\For {$id \leftarrow 1, |V|$}
+	\State $set<int> path$
+	\State path.insert(id)
+	\For {$id2 \leftarrow id + 1, |V|$}
+		\If {isAdyacent(path.end, id2)}
+			\State path.insert(id2)
+		\EndIf
+	\EndFor
+	\While {path.size() $\geq$ 3 \textbf{and} (path.size() mod 2 == 0 \textbf{or} $\neg$isAdyacent(path.start, path.end))}
+		\State path.erase(path.end)
+	\EndWhile
+	\If {path.size() $\geq$ 3 \textbf{and} isAdyacent(path.start, path.end)}
+		\State oddhole\_familly.insert(path)
+	\EndIf
+\EndFor
+
+\EndProcedure
+\end{algorithmic}
+\end{algorithm}

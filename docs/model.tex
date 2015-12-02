@@ -59,3 +59,11 @@ x_{ij} \in \{0,1\} \;\;\;\;\; \forall i \in V, \forall j \in C
 \begin{equation}
 w_j \in \{0,1\} \;\;\;\;\; \forall j \in C
 \end{equation}
+
+\subsection{Eliminacion de simetrias}
+
+Una de nuestras ideas para eliminar las simetrias fue usar la clasica condicion de coloreo que dice que los colores se deben utilizar en orden. Aunque existen otras, notamos que esta condicion mejoro ampliamente la ejecucion del LP. Formalmente, se puede expresar como:
+
+\begin{equation}
+w_j \geq w_{j+1} \;\;\;\;\; \forall \; 1 \leq j \leq |C|
+\end{equation}

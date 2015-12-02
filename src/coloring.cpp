@@ -500,7 +500,6 @@ int oddholeFamillyHeuristic(set<set<int> >& oddhole_familly, int vertex_size, in
 	for (int id = 1; id <= vertex_size; ++id) {
 		set<int> path;
 		path.insert(id);
-		int start_id = id;
 		for (int id2 = id + 1; id2 <= vertex_size; ++id2) {
 			if (isAdyacent(*(--path.end()), id2, edge_size, adyacencyList)) {
 				path.insert(id2);
