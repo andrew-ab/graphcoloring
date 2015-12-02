@@ -207,7 +207,7 @@ inline bool isAdyacent(int from, int to, int edge_size, bool* adyacencyList) {
 
 bool adyacentToAll(int id, int edge_size, bool* adyacencyList, const set<int>& clique) {
 	for (set<int>::iterator it = clique.begin(); it != clique.end(); ++it) {
-		if (!isAdyacent(id, *it, edge_size, adyacencyList)) return false;
+		if (!isAdyacent(*it, id, edge_size, adyacencyList)) return false;
 	}
 	return true;
 }
@@ -525,7 +525,7 @@ int oddholeFamillyHeuristic(set<set<int> >& oddhole_familly, int vertex_size, in
 	// 	cout << endl;
 	// }
 
-	int familly_size = oddhole_familly.size() * partition_size;
+	int familly_size = oddhole_familly.size();
 
 	printf("Familly generated (size: %d)\n", familly_size);
 
@@ -551,7 +551,7 @@ int findUnsatisfiedOddholeRestrictions(CPXENVptr& env, CPXLPptr& lp, set<set<int
 		}
 	}
 
-	printf("%d unsatisfied oddhole restrictions found!\n", counter);
+	printf("%d unsatisfied oddhole restrictions found! (all colors)\n", counter);
 
 	return counter;
 }
@@ -625,7 +625,7 @@ int maximalCliqueFamillyHeuristic(set<set<int> >& clique_familly, int vertex_siz
 	// 	cout << endl;
 	// }
 
-	int familly_size = clique_familly.size() * partition_size;
+	int familly_size = clique_familly.size();
 
 	printf("Familly generated (size: %d)\n", familly_size);
 
@@ -650,7 +650,7 @@ int findUnsatisfiedCliqueRestrictions(CPXENVptr& env, CPXLPptr& lp, set<set<int>
 		}
 	}
 
-	printf("%d unsatisfied clique restrictions found!\n", counter);
+	printf("%d unsatisfied clique restrictions found! (all colors)\n", counter);
 
 	return counter;
 }
