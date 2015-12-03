@@ -14,8 +14,14 @@ SOURCES = $(SRCPRI)
 
 OBJECTS = $(SOURCES:.cpp=.o)
 
+EXECUTABLE = coloring
+
 all: $(OBJECTS) 
 	$(CCC) -o coloring $(OBJECTS) $(CCFLAGS) $(LDFLAGS) -lpthread -lm -lnsl
+	cp -f coloring ../exp
+
+clean:
+	rm -rf $(EXECUTABLE) $(OBJECTS)
 
 #
 # produce the .o files from the .cc and .c files

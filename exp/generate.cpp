@@ -5,8 +5,6 @@
 
 using namespace std;
 
-unsigned choose(unsigned n, unsigned k);
-
 int main(int argc, char** argv) {
 
 	if (argc != 4) {
@@ -17,8 +15,6 @@ int main(int argc, char** argv) {
 	int type = atoi(argv[1]);
 	int vertex_size = atoi(argv[2]);
 	int density = atoi(argv[3]);
-	int clique_size = choose(vertex_size, 2);
-	int edge_size = clique_size * (density/100.0);
 
 	/* I was looking for a data structure with efficient random access and removal.
 	 * So far it seems the best option is a vector. However, I'm sure some sort of
@@ -30,13 +26,17 @@ int main(int argc, char** argv) {
 	 */
 	vector<pair<int,int> > possible_edges;
 
-	cout << "Type: " << type << " Vertex Size: " << vertex_size << " Density: " << density << " Edges: " << edge_size << endl;
-
+	int clique_size = 0;
 	for (int i = 1; i <= vertex_size; ++i) {
 		for (int j = i + 1; j <= vertex_size; ++j) {
 			possible_edges.push_back(pair<int,int>(i,j));
+			clique_size++;
 		}
 	}
+
+	int edge_size = clique_size * (density/100.0);
+
+	cout << "Type: " << type << " Vertex Size: " << vertex_size << " Density: " << density << " Edges: " << edge_size << endl;
 
 	char filename[] = "graph";
 	ofstream myfile;
@@ -44,7 +44,7 @@ int main(int argc, char** argv) {
 	myfile << "c FILE: " << filename << endl;
 	myfile << "c Randomly generated graph" << endl;
 	myfile << "c Density: " << density << "%" << endl;
-	myfile << "p edge " << edge_size << " " << vertex_size << endl;
+	myfile << "p edge " << vertex_size << " " << edge_size << endl;
 
 	for (int i = 0; i < edge_size; ++i) {
 		int index = rand() % possible_edges.size();
@@ -57,18 +57,4 @@ int main(int argc, char** argv) {
 	myfile.close();
 
 	return 0;
-}
-
-unsigned choose(unsigned n, unsigned k)
-{
-    if (k > n) return 0;
-    if (k * 2 > n) k = n-k;
-    if (k == 0) return 1;
-
-    int result = n;
-    for (int i = 2; i <= k; ++i) {
-        result *= (n-i+1);
-        result /= i;
-    }
-    return result;
 }

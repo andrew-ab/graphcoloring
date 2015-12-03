@@ -16,9 +16,9 @@ ILOSTLBEGIN // macro to define namespace
 
 // helper functions
 int getVertexIndex(int id, int color, int partition_size);
-inline int fromMatrixToVector(int from, int to, int edge_size);
-inline bool isAdyacent(int from, int to, int edge_size, bool* adyacencyList);
-bool adyacentToAll(int id, int edge_size, bool* adyacencyList, const set<int>& clique);
+inline int fromMatrixToVector(int from, int to, int vertex_size);
+inline bool isAdyacent(int from, int to, int vertex_size, bool* adyacencyList);
+bool adyacentToAll(int id, int vertex_size, bool* adyacencyList, const set<int>& clique);
 bool cliqueNotContained(const set<int>& clique, const set<set<int> >& clique_set);
 
 // load LP
@@ -113,11 +113,11 @@ int main(int argc, char **argv) {
 
 	// build adyacency list
 	edge_size = edges.size();
-	int adyacency_size = edge_size*edge_size - ((edge_size+1)*edge_size/2);
+	int adyacency_size = vertex_size*vertex_size - ((vertex_size+1)*vertex_size/2);
 	bool* adyacencyList = new bool[adyacency_size]; // can be optimized even more with a bitfield.
 	fill_n(adyacencyList, adyacency_size, false);
 	for (set<pair<int,int> >::iterator it = edges.begin(); it != edges.end(); ++it) {
-		adyacencyList[fromMatrixToVector(it->first, it->second, edge_size)] = true;
+		adyacencyList[fromMatrixToVector(it->first, it->second, vertex_size)] = true;
 	}
 
 	// set random seed
@@ -188,26 +188,26 @@ int getVertexIndex(int id, int color, int partition_size) {
  * store the upper diagonal and get adyacency from a list. the math is quite simple, it
  * just uses the formula for the sum of integers. ids are numbered starting from 1.
  */
-inline int fromMatrixToVector(int from, int to, int edge_size) {
+inline int fromMatrixToVector(int from, int to, int vertex_size) {
 
 	// for speed, many parts of this code are commented, since by our usage we always
 	// know from < to and are in range.
 
-	// assert(from != to && from <= edge_size && to <= edge_size);
+	// assert(from != to && from <= vertex_size && to <= vertex_size);
 
 	// if (from < to)
-		return from*edge_size - (from+1)*from/2 - (edge_size - to) - 1;
+		return from*vertex_size - (from+1)*from/2 - (vertex_size - to) - 1;
 	// else
-	// 	return to*edge_size - (to+1)*to/2 - (edge_size - from) - 1;
+	// 	return to*vertex_size - (to+1)*to/2 - (vertex_size - from) - 1;
 }
 
-inline bool isAdyacent(int from, int to, int edge_size, bool* adyacencyList) {
-	return adyacencyList[fromMatrixToVector(from, to, edge_size)];
+inline bool isAdyacent(int from, int to, int vertex_size, bool* adyacencyList) {
+	return adyacencyList[fromMatrixToVector(from, to, vertex_size)];
 }
 
-bool adyacentToAll(int id, int edge_size, bool* adyacencyList, const set<int>& clique) {
+bool adyacentToAll(int id, int vertex_size, bool* adyacencyList, const set<int>& clique) {
 	for (set<int>::iterator it = clique.begin(); it != clique.end(); ++it) {
-		if (!isAdyacent(*it, id, edge_size, adyacencyList)) return false;
+		if (!isAdyacent(*it, id, vertex_size, adyacencyList)) return false;
 	}
 	return true;
 }
@@ -284,7 +284,7 @@ int loadAdyacencyColorRestriction(CPXENVptr& env, CPXLPptr& lp, int vertex_size,
 	for (int from = 1; from <= vertex_size; ++from) {
 		for (int to = from + 1; to <= vertex_size; ++to) {
 
-			if (!isAdyacent(from, to, edge_size, adyacencyList)) continue;
+			if (!isAdyacent(from, to, vertex_size, adyacencyList)) continue;
 
 			for (int color = 1; color <= partition_size; ++color) {
 				matbeg[i] = i*2;
@@ -501,17 +501,17 @@ int oddholeFamillyHeuristic(set<set<int> >& oddhole_familly, int vertex_size, in
 		set<int> path;
 		path.insert(id);
 		for (int id2 = id + 1; id2 <= vertex_size; ++id2) {
-			if (isAdyacent(*(--path.end()), id2, edge_size, adyacencyList)) {
+			if (isAdyacent(*(--path.end()), id2, vertex_size, adyacencyList)) {
 				path.insert(id2);
 			}
 		}
 
 		while (path.size() >= 3 && (path.size() % 2 == 0 || 
-			!isAdyacent(*path.begin(), *(--path.end()), edge_size, adyacencyList))) {
+			!isAdyacent(*path.begin(), *(--path.end()), vertex_size, adyacencyList))) {
 			path.erase(--path.end());
 		}
 
-		if (path.size() >= 3 && isAdyacent(*path.begin(), *(--path.end()), edge_size, adyacencyList)) {
+		if (path.size() >= 3 && isAdyacent(*path.begin(), *(--path.end()), vertex_size, adyacencyList)) {
 			oddhole_familly.insert(path);
 		}
 	}
@@ -605,7 +605,7 @@ int maximalCliqueFamillyHeuristic(set<set<int> >& clique_familly, int vertex_siz
 		set<int> clique;
 		clique.insert(id);
 		for (int id2 = id + 1; id2 <= vertex_size; ++id2) {
-			if (adyacentToAll(id2, edge_size, adjacencyList, clique)) {
+			if (adyacentToAll(id2, vertex_size, adjacencyList, clique)) {
 				clique.insert(id2);
 			}
 		}
