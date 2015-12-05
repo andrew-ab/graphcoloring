@@ -18,7 +18,7 @@ int getVertexIndex(int id, int color, int partition_size);
 inline int fromMatrixToVector(int from, int to, int vertex_size);
 inline bool isAdyacent(int from, int to, int vertex_size, bool* adjacencyList);
 bool adyacentToAll(int id, int vertex_size, bool* adjacencyList, const set<int>& clique);
-bool cliqueNotContained(const set<int>& clique, const set<set<int> >& clique_set);
+bool cliqueNotContained(const set<int>& clique, const vector<tuple<double, int, set<int> > >& clique_familly);
 
 // load LP
 int loadObjectiveFunction(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int partition_size, char vtype);
@@ -28,22 +28,20 @@ int loadAdyacencyColorRestriction(CPXENVptr& env, CPXLPptr& lp, int vertex_size,
 int loadSymmetryBreaker(CPXENVptr& env, CPXLPptr& lp, int partition_size);
 
 // cutting planes
-int loadCuttingPlanes(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int edge_size, int partition_size, bool* adjacencyList, int iterations);
-
-int maximalCliqueFamillyHeuristic(set<set<int> >& clique_familly, int vertex_size, int edge_size, int partition_size, bool* adjacencyList);
-int maximalCliqueFamillyHeuristic_beta(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int edge_size, int partition_size, bool* adjacencyList, double* sol);
-
-int findUnsatisfiedCliqueRestrictions(CPXENVptr& env, CPXLPptr& lp, set<set<int> >& clique_familly, int vertex_size, int partition_size, int n, double* sol);
+int loadCuttingPlanes(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int edge_size, int partition_size, bool* adjacencyList, int iterations, int load_limit, bool clique_only);
+int maximalCliqueFamillyHeuristic(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int edge_size, int partition_size, bool* adjacencyList, double* sol, int load_limit);
 int loadUnsatisfiedCliqueRestriction(CPXENVptr& env, CPXLPptr& lp, int partition_size, const set<int>& clique, int color);
 
-int oddholeFamillyHeuristic(set<set<int> >& oddhole_familly, int vertex_size, int edge_size, int partition_size, bool* adjacencyList);
-int findUnsatisfiedOddholeRestrictions(CPXENVptr& env, CPXLPptr& lp, set<set<int> >& oddhole_familly, int vertex_size, int partition_size, int n, double* sol);
+int oddholeFamillyHeuristic(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int edge_size, int partition_size, bool* adjacencyList, double* sol, int load_limit);
 int loadUnsatisfiedOddholeRestriction(CPXENVptr& env, CPXLPptr& lp, int partition_size, const set<int>& path, int color);
 
 // cplex functions
 int solveLP(CPXENVptr& env, CPXLPptr& lp, int edge_size, int vertex_size, int partition_size);
 int convertVariableType(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int partition_size, char vtype);
+int setTraversalStrategy(CPXENVptr& env, int strategy);
+int setBranchingVariableStrategy(CPXENVptr& env, int strategy);
 int setBranchAndBoundConfig(CPXENVptr& env);
+
 int checkStatus(CPXENVptr& env, int status);
 
 // colors array!
@@ -65,14 +63,19 @@ const char* colors[] = {"Blue", "Red", "Green", "Yellow", "Grey", "Green", "Pink
 
 int main(int argc, char **argv) {
 
-	if (argc != 5) {
-		printf("Usage: %s inputFile solver partitions iterations\n", argv[0]);
+	if (argc != 10) {
+		printf("Usage: %s inputFile solver partitions symmetry_breaker iterations clique_only load_limit traversal_strategy branching_strategy\n", argv[0]);
 		exit(1);
 	}
 
 	int solver = atoi(argv[2]);
 	int partition_size = atoi(argv[3]);
-	int iterations = atoi(argv[4]);
+	bool symmetry_breaker = (atoi(argv[4]) == 1);
+	int iterations = atoi(argv[5]);
+	bool clique_only = (atoi(argv[6]) == 1);
+	int load_limit = atoi(argv[7]);
+	int traversal_strategy = atoi(argv[7]);
+	int branching_strategy = atoi(argv[9]);
 
 	if (solver == 1) {
 		printf("Solver: Branch & Bound\n");
@@ -96,7 +99,7 @@ int main(int argc, char **argv) {
 	char buf[100];
 	int vertex_size, edge_size;
 
-	set<pair<int,int> > edges; // sometimes we have to filter directed graphs
+	set<pair<double,int> > edges; // sometimes we have to filter directed graphs
 
 	while (fgets(buf, sizeof(buf), fp) != NULL) {
 		if (buf[0] == 'c') continue;
@@ -107,9 +110,9 @@ int main(int argc, char **argv) {
 			int from, to;
 			sscanf(&buf[2], "%d %d", &from, &to);
 			if (from < to) {
-				edges.insert(pair<int,int>(from, to));
+				edges.insert(pair<double,int>(from, to));
 			} else {
-				edges.insert(pair<int,int>(to, from));
+				edges.insert(pair<double,int>(to, from));
 			}
 		}
 	}
@@ -119,7 +122,7 @@ int main(int argc, char **argv) {
 	int adyacency_size = vertex_size*vertex_size - ((vertex_size+1)*vertex_size/2);
 	bool* adjacencyList = new bool[adyacency_size]; // can be optimized even more with a bitfield.
 	fill_n(adjacencyList, adyacency_size, false);
-	for (set<pair<int,int> >::iterator it = edges.begin(); it != edges.end(); ++it) {
+	for (set<pair<double,int> >::iterator it = edges.begin(); it != edges.end(); ++it) {
 		adjacencyList[fromMatrixToVector(it->first, it->second, vertex_size)] = true;
 	}
 
@@ -130,16 +133,20 @@ int main(int argc, char **argv) {
 	// int partition_size = rand() % vertex_size + 1;
 	vector<vector<int> > partitions(partition_size, vector<int>());
 
-	// warning: this procedure doesn't guarantee every partition will have an element.
-	for (int i = 1; i <= vertex_size; ++i) {
-		int assign_partition = rand() % partition_size;
-		partitions[assign_partition].push_back(i);
+	for (int i = 0; i < vertex_size; ++i) {
+		partitions[i % partition_size].push_back(i+1);
 	}
 
-	// update partition_size
-	for (std::vector<vector<int> >::iterator it = partitions.begin(); it != partitions.end(); ++it) {
-		if (it->size() == 0) --partition_size;
-	}
+	// warning: this procedure doesn't guarantee every partition will have an element.
+	// for (int i = 1; i <= vertex_size; ++i) {
+	// 	int assign_partition = rand() % partition_size;
+	// 	partitions[assign_partition].push_back(i);
+	// }
+
+	// // update partition_size
+	// for (std::vector<vector<int> >::iterator it = partitions.begin(); it != partitions.end(); ++it) {
+	// 	if (it->size() == 0) --partition_size;
+	// }
 
 	printf("Graph: vertex_size: %d, edge_size: %d, partition_size: %d\n", vertex_size, edge_size, partition_size);
 
@@ -156,6 +163,8 @@ int main(int argc, char **argv) {
 	checkStatus(env, status);
 
 	setBranchAndBoundConfig(env);
+	setTraversalStrategy(env, traversal_strategy);
+	setBranchingVariableStrategy(env, branching_strategy);
 
 	if (solver == 1) { // pure branch & bound
 		loadObjectiveFunction(env, lp, vertex_size, partition_size, CPX_BINARY);
@@ -166,9 +175,10 @@ int main(int argc, char **argv) {
 	loadAdyacencyColorRestriction(env, lp, vertex_size, edge_size, partition_size, adjacencyList);
 	loadSingleColorInPartitionRestriction(env, lp, partitions, partition_size);
 	loadAdyacencyColorRestriction(env, lp, vertex_size, partition_size);
-	loadSymmetryBreaker(env, lp, partition_size);
 
-	if (solver != 1) loadCuttingPlanes(env, lp, vertex_size, edge_size, partition_size, adjacencyList, iterations);
+	if (symmetry_breaker) loadSymmetryBreaker(env, lp, partition_size);
+
+	if (solver != 1) loadCuttingPlanes(env, lp, vertex_size, edge_size, partition_size, adjacencyList, iterations, load_limit, clique_only);
 		
 	// write LP formulation to file, great to debug.
 	status = CPXwriteprob(env, lp, "graph.lp", NULL);
@@ -215,10 +225,10 @@ bool adyacentToAll(int id, int vertex_size, bool* adjacencyList, const set<int>&
 	return true;
 }
 
-bool cliqueNotContained(const set<int>& clique, const set<set<int> >& clique_set) {
-	for (set<set<int> >::iterator it = clique_set.begin(); it != clique_set.end(); ++it) {
+bool cliqueNotContained(const set<int>& clique, const vector<tuple<double, int, set<int> > >& clique_familly) {
+	for (vector<tuple<double, int, set<int> > >::const_iterator it = clique_familly.begin(); it != clique_familly.end(); ++it) {
 		// by construction, sets are already ordered.
-		if (includes(it->begin(), it->end(), clique.begin(), clique.end())) return false;
+		if (includes(get<2>(*it).begin(), get<2>(*it).end(), clique.begin(), clique.end())) return false;
 	}
 	return true;
 }
@@ -436,7 +446,7 @@ int loadSymmetryBreaker(CPXENVptr& env, CPXLPptr& lp, int partition_size) {
 	return 0;
 }
 
-int loadCuttingPlanes(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int edge_size, int partition_size, bool* adjacencyList, int iterations) {
+int loadCuttingPlanes(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int edge_size, int partition_size, bool* adjacencyList, int iterations, int load_limit, bool clique_only) {
 
 	printf("Finding Cutting Planes.\n");
 
@@ -445,12 +455,6 @@ int loadCuttingPlanes(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int edge_si
 	int status = CPXgettime(env, &inittime);
 
 	int n = partition_size + (vertex_size*partition_size);
-
-	// set<set<int> > oddhole_familly;
-	// oddholeFamillyHeuristic(oddhole_familly, vertex_size, edge_size, partition_size, adjacencyList);
-
-	// set<set<int> > clique_familly;
-	// maximalCliqueFamillyHeuristic(clique_familly, vertex_size, edge_size, partition_size, adjacencyList);
 
 	double *sol = new double[n];
 	int i = 1;
@@ -474,16 +478,12 @@ int loadCuttingPlanes(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int edge_si
 		// 	}
 		// }
 
-		// check which elements in the familly do not satisfy the inequality
-		// if (clique_familly.size() > 0) {
-		// 	unsatisfied_restrictions += findUnsatisfiedCliqueRestrictions(env, lp, clique_familly, vertex_size, partition_size, n, sol);
-		// }
-
 		// if (oddhole_familly.size() > 0) {
 		// 	unsatisfied_restrictions += findUnsatisfiedOddholeRestrictions(env, lp, oddhole_familly, vertex_size, partition_size, n, sol);
 		// }
 
-		unsatisfied_restrictions += maximalCliqueFamillyHeuristic_beta(env, lp, vertex_size, edge_size, partition_size, adjacencyList, sol);
+		if (!clique_only) unsatisfied_restrictions += oddholeFamillyHeuristic(env, lp, vertex_size, edge_size, partition_size, adjacencyList, sol, load_limit);
+		unsatisfied_restrictions += maximalCliqueFamillyHeuristic(env, lp, vertex_size, edge_size, partition_size, adjacencyList, sol, load_limit);
 
 		if (unsatisfied_restrictions == 0) break;
 
@@ -498,16 +498,15 @@ int loadCuttingPlanes(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int edge_si
 	return 0;
 }
 
-int maximalCliqueFamillyHeuristic_beta(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int edge_size, int partition_size, bool* adjacencyList, double* sol) {
+int maximalCliqueFamillyHeuristic(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int edge_size, int partition_size, bool* adjacencyList, double* sol, int load_limit) {
 
 	printf("Generating clique familly.\n");
 
-	int n = 0;
+	int loaded = 0;
 
-	int c = 0; // cliques to add per iteration
+	vector<tuple<double, int, set<int> > > clique_familly;
 
 	for (int color = 1; color <= partition_size; ++color) {
-		set<set<int> > clique_familly;
 
 		for (int id = 1; id <= vertex_size; id++) {
 
@@ -526,102 +525,32 @@ int maximalCliqueFamillyHeuristic_beta(CPXENVptr& env, CPXLPptr& lp, int vertex_
 			}
 			if (clique.size() > 2 && sum > sol[color-1] + TOL) {
 				if (cliqueNotContained(clique, clique_familly)) {
-					clique_familly.insert(clique);
-
-					cout << "sum: " << sum << " w: " << sol[color-1] << endl;
-
-					loadUnsatisfiedCliqueRestriction(env, lp, partition_size, clique, color);
-					// cout << "added clique res: " << sum << " w: " << sol[color-1] << " size: " << clique.size() << endl;
-					++n;
-					++c;
-					cout << "Clique (" << color << ")";
-					for (set<int>::iterator it = clique.begin(); it != clique.end(); ++it) {
-						cout << *it << " ";
-					}
-					cout << endl;
+					double score = sum - sol[color-1];
+					clique_familly.push_back(tuple<double, int, set<int> >(score,color,clique));
 				}
 			}
 		}
-
-		// if (c == 20) break;
 	}
 
-	printf("Found %d unsatisfied clique restrictions! (all colors)\n", n);
+	sort(clique_familly.begin(), clique_familly.end(), greater<tuple<double, int, set<int> > >());   
 
-	// print the familly
-	// for (set<set<int> >::iterator it = clique_familly.begin(); it != clique_familly.end(); ++it) {
-	// 	cout << "Clique: ";
-	// 	for (set<int>::iterator it2 = it->begin(); it2 != it->end(); ++it2) {
-	// 		cout << *it2 << " ";
-	// 	}
-	// 	cout << endl;
-	// }
+	//print the familly
+	for (vector<tuple<double, int, set<int> > >::const_iterator it = clique_familly.begin(); 
+		it != clique_familly.end() && loaded < load_limit; ++loaded, ++it) {
 
-	// int familly_size = clique_familly.size();
-
-	// printf("Familly generated (size: %d)\n", familly_size);
-
-	// return familly_size;
-
-	return n;
-}
-
-int maximalCliqueFamillyHeuristic(set<set<int> >& clique_familly, int vertex_size, int edge_size, int partition_size, bool* adjacencyList) {
-
-	printf("Generating clique familly.\n");
-
-	for (int id = 1; id <= vertex_size; id++) {
-		set<int> clique;
-		clique.insert(id);
-		for (int id2 = id + 1; id2 <= vertex_size; ++id2) {
-			if (adyacentToAll(id2, vertex_size, adjacencyList, clique)) {
-				clique.insert(id2);
-			}
+		loadUnsatisfiedCliqueRestriction(env, lp, partition_size, get<2>(*it), get<1>(*it));
+		cout << "Score: " << get<0>(*it) << " - ";
+		for (set<int>::iterator it2 = get<2>(*it).begin(); it2 != get<2>(*it).end(); ++it2) {
+			cout << *it2 << " ";
 		}
-		if (clique.size() > 2) {
-			if (cliqueNotContained(clique, clique_familly)) {
-				clique_familly.insert(clique);
-			}
-		}
+		cout << endl;
 	}
 
-	// print the familly
-	// for (set<set<int> >::iterator it = clique_familly.begin(); it != clique_familly.end(); ++it) {
-	// 	cout << "Clique: ";
-	// 	for (set<int>::iterator it2 = it->begin(); it2 != it->end(); ++it2) {
-	// 		cout << *it2 << " ";
-	// 	}
-	// 	cout << endl;
-	// }
+	printf("Loaded %d/%d unsatisfied clique restrictions! (all colors)\n", loaded, (int) clique_familly.size());
 
-	int familly_size = clique_familly.size();
+	// printf("Familly generated (size: %d)\n", (int) clique_familly.size());
 
-	printf("Familly generated (size: %d)\n", familly_size);
-
-	return familly_size;
-}
-
-int findUnsatisfiedCliqueRestrictions(CPXENVptr& env, CPXLPptr& lp, set<set<int> >& clique_familly, int vertex_size, int partition_size, int n, double* sol) {
-
-	int counter = 0;
-	for (set<set<int> >::iterator it = clique_familly.begin(); it != clique_familly.end(); ++it) {
-
-		for (int color = 1; color <= partition_size; ++color) {
-			double sum = 0;
-			for (set<int>::iterator it2 = it->begin(); it2 != it->end(); ++it2) {
-				double coef = sol[getVertexIndex(*it2, color, partition_size)];
-				sum += sol[getVertexIndex(*it2, color, partition_size)];
-			}
-			if (sum > sol[color-1] + TOL) {
-				loadUnsatisfiedCliqueRestriction(env, lp, partition_size, *it, color);
-				++counter;
-			}
-		}
-	}
-
-	printf("Found %d unsatisfied clique restrictions! (all colors)\n", counter);
-
-	return counter;
+	return loaded;
 }
 
 int loadUnsatisfiedCliqueRestriction(CPXENVptr& env, CPXLPptr& lp, int partition_size, const set<int>& clique, int color) {
@@ -663,68 +592,106 @@ int loadUnsatisfiedCliqueRestriction(CPXENVptr& env, CPXLPptr& lp, int partition
 	return 0;
 }
 
-int oddholeFamillyHeuristic(set<set<int> >& oddhole_familly, int vertex_size, int edge_size, int partition_size, bool* adjacencyList) {
+int oddholeFamillyHeuristic(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int edge_size, int partition_size, bool* adjacencyList, double* sol, int load_limit) {
 
 	printf("Generating oddhole familly.\n");
 
-	for (int id = 1; id <= vertex_size; ++id) {
-		set<int> path;
-		path.insert(id);
-		for (int id2 = id + 1; id2 <= vertex_size; ++id2) {
-			if (isAdyacent(*(--path.end()), id2, vertex_size, adjacencyList)) {
-				path.insert(id2);
-			}
-		}
+	int loaded = 0;
 
-		while (path.size() >= 3 && (path.size() % 2 == 0 || 
-			!isAdyacent(*path.begin(), *(--path.end()), vertex_size, adjacencyList))) {
-			path.erase(--path.end());
-		}
+	vector<tuple<double, int, set<int> > > path_familly;
 
-		if (path.size() >= 3 && isAdyacent(*path.begin(), *(--path.end()), vertex_size, adjacencyList)) {
-			oddhole_familly.insert(path);
-		}
-	}
+	for (int color = 1; color <= partition_size; ++color) {
 
-	// print the familly
-	// for (set<set<int> >::iterator it = oddhole_familly.begin(); it != oddhole_familly.end(); ++it) {
-	// 	cout << "Path: ";
-	// 	for (set<int>::iterator it2 = it->begin(); it2 != it->end(); ++it2) {
-	// 		cout << *it2 << " ";
-	// 	}
-	// 	cout << endl;
-	// }
+		for (int id = 1; id <= vertex_size; id++) {
 
-	int familly_size = oddhole_familly.size();
+			if (sol[getVertexIndex(id, color, partition_size)] == 0) continue;
 
-	printf("Familly generated (size: %d)\n", familly_size);
-
-	return familly_size;
-}
-
-int findUnsatisfiedOddholeRestrictions(CPXENVptr& env, CPXLPptr& lp, set<set<int> >& oddhole_familly, int vertex_size, int partition_size, int n, double* sol) {
-
-	int counter = 0;
-	for (set<set<int> >::iterator it = oddhole_familly.begin(); it != oddhole_familly.end(); ++it) {
-
-		for (int color = 1; color <= partition_size; ++color) {
 			double sum = 0;
-			for (set<int>::iterator it2 = it->begin(); it2 != it->end(); ++it2) {
-				double coef = sol[getVertexIndex(*it2, color, partition_size)];
-				sum += sol[getVertexIndex(*it2, color, partition_size)];
+			set<int> path; // dif, color, path
+			path.insert(id);
+			for (int id2 = id + 1; id2 <= vertex_size; ++id2) {
+				if (sol[getVertexIndex(id2, color, partition_size)] == 0) continue;
+
+				if (isAdyacent(*(--path.end()), id2, vertex_size, adjacencyList)) {
+					path.insert(id2);
+				}
+
 			}
-			int k = (it->size() - 1) / 2;
-			if (sum > k*sol[color-1]) {
-				loadUnsatisfiedOddholeRestriction(env, lp, partition_size, *it, color);
-				++counter;
+
+			while (path.size() >= 3 && (path.size() % 2 == 0 || 
+				!isAdyacent(*path.begin(), *(--path.end()), vertex_size, adjacencyList))) {
+				path.erase(--path.end());
+			}
+
+			for (set<int>::iterator it = path.begin(); it != path.end(); ++it) {
+				sum += sol[getVertexIndex(*it, color, partition_size)];
+			}
+
+			if (path.size() > 2 && sum > sol[color-1] + TOL) {
+				double score = sum - sol[color-1];
+				path_familly.push_back(tuple<double, int, set<int> >(score,color,path));
 			}
 		}
 	}
 
-	printf("Found %d unsatisfied oddhole restrictions! (all colors)\n", counter);
+	sort(path_familly.begin(), path_familly.end(), greater<tuple<double, int, set<int> > >());   
 
-	return counter;
+	//print the familly
+	for (vector<tuple<double, int, set<int> > >::const_iterator it = path_familly.begin(); 
+		it != path_familly.end() && loaded < load_limit; ++loaded, ++it) {
+		loadUnsatisfiedOddholeRestriction(env, lp, partition_size, get<2>(*it), get<1>(*it));
+		cout << "Score: " << get<0>(*it) << " - ";
+		for (set<int>::iterator it2 = get<2>(*it).begin(); it2 != get<2>(*it).end(); ++it2) {
+			cout << *it2 << " ";
+		}
+		cout << endl;
+	}
+
+	printf("Loaded %d/%d unsatisfied oddhole restrictions! (all colors)\n", loaded, (int) path_familly.size());
+
+	// printf("Familly generated (size: %d)\n", (int) clique_familly.size());
+
+	return loaded;
 }
+
+// int oddholeFamillyHeuristic(set<set<int> >& oddhole_familly, int vertex_size, int edge_size, int partition_size, bool* adjacencyList) {
+
+// 	printf("Generating oddhole familly.\n");
+
+// 	for (int id = 1; id <= vertex_size; ++id) {
+// 		set<int> path;
+// 		path.insert(id);
+// 		for (int id2 = id + 1; id2 <= vertex_size; ++id2) {
+// 			if (isAdyacent(*(--path.end()), id2, vertex_size, adjacencyList)) {
+// 				path.insert(id2);
+// 			}
+// 		}
+
+// 		while (path.size() >= 3 && (path.size() % 2 == 0 || 
+// 			!isAdyacent(*path.begin(), *(--path.end()), vertex_size, adjacencyList))) {
+// 			path.erase(--path.end());
+// 		}
+
+// 		if (path.size() >= 3 && isAdyacent(*path.begin(), *(--path.end()), vertex_size, adjacencyList)) {
+// 			oddhole_familly.insert(path);
+// 		}
+// 	}
+
+// 	// print the familly
+// 	// for (set<set<int> >::iterator it = oddhole_familly.begin(); it != oddhole_familly.end(); ++it) {
+// 	// 	cout << "Path: ";
+// 	// 	for (set<int>::iterator it2 = it->begin(); it2 != it->end(); ++it2) {
+// 	// 		cout << *it2 << " ";
+// 	// 	}
+// 	// 	cout << endl;
+// 	// }
+
+// 	int familly_size = oddhole_familly.size();
+
+// 	printf("Familly generated (size: %d)\n", familly_size);
+
+// 	return familly_size;
+// }
 
 int loadUnsatisfiedOddholeRestriction(CPXENVptr& env, CPXLPptr& lp, int partition_size, const set<int>& path, int color) {
 
@@ -904,6 +871,38 @@ int convertVariableType(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int parti
 	return 0;
 }
 
+int setTraversalStrategy(CPXENVptr& env, int strategy) {
+
+	// MIP node selection strategy
+	// http://www-01.ibm.com/support/knowledgecenter/SSSA5P_12.3.0/ilog.odms.cplex.help/Content/Optimization/Documentation/Optimization_Studio/_pubskel/ps_refparameterscplex2299.html
+
+	// 0 CPX_NODESEL_DFS          Depth-first search
+	// 1 CPX_NODESEL_BESTBOUND    Best-bound search; default
+	// 2 CPX_NODESEL_BESTEST      Best-estimate search
+	// 3 CPX_NODESEL_BESTEST_ALT  Alternative best-estimate search 
+
+	CPXsetintparam(env, CPX_PARAM_NODESEL, strategy);
+
+	return 0;
+}
+
+int setBranchingVariableStrategy(CPXENVptr& env, int strategy) {
+
+	// MIP variable selection strategy
+	// http://www-01.ibm.com/support/knowledgecenter/SS9UKU_12.4.0/com.ibm.cplex.zos.help/Parameters/topics/VarSel.html
+
+	// -1 	CPX_VARSEL_MININFEAS 	   Branch on variable with minimum infeasibility
+	// 0 	CPX_VARSEL_DEFAULT   	   Automatic: let CPLEX choose variable to branch on; default
+	// 1 	CPX_VARSEL_MAXINFEAS 	   Branch on variable with maximum infeasibility
+	// 2 	CPX_VARSEL_PSEUDO 	   	   Branch based on pseudo costs
+	// 3 	CPX_VARSEL_STRONG 		   Strong branching
+	// 4 	CPX_VARSEL_PSEUDOREDUCED   Branch based on pseudo reduced costs
+
+	CPXsetintparam(env, CPX_PARAM_VARSEL, strategy);
+
+	return 0;
+}
+
 int setBranchAndBoundConfig(CPXENVptr& env) {
 
 	// CPLEX config
@@ -932,7 +931,7 @@ int setBranchAndBoundConfig(CPXENVptr& env) {
 	CPXsetintparam(env, CPX_PARAM_MIPSEARCH, CPX_MIPSEARCH_TRADITIONAL);
 
 	// use only one thread for experimentation
-	CPXsetintparam(env, CPX_PARAM_THREADS, 1);
+	// CPXsetintparam(env, CPX_PARAM_THREADS, 1);
 
 	// do not add cutting planes
 	CPXsetintparam(env, CPX_PARAM_EACHCUTLIM, CPX_OFF);

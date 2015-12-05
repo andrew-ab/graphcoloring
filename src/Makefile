@@ -4,7 +4,7 @@ INC_DIR		= -I/opt/ibm/ILOG/CPLEX_Studio126/cplex/include/ -I/opt/ibm/ILOG/CPLEX_
 
 CCC = g++
 
-CCFLAGS = -m64 -O2 -fPIC -fexceptions -DNDEBUG -DIL_STD
+CCFLAGS = -std=c++11 -m64 -O2 -fPIC -fexceptions -DNDEBUG -DIL_STD
 
 LDFLAGS = $(LP_LIBS) -lc -lm
 
