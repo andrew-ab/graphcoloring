@@ -20,6 +20,15 @@ CPX_VARSEL_PSEUDO 	   	 = 2  # Branch based on pseudo costs
 CPX_VARSEL_STRONG 		 = 3  # Strong branching
 CPX_VARSEL_PSEUDOREDUCED = 4  # Branch based on pseudo reduced costs
 
+# select cuts
+CUTS_CLIQUE_ONLY  = 0
+CUTS_ODDHOLE_ONLY = 1
+CUTS_ALL          = 2
+
+# select cplex config
+CPLEX_DEFAULT = 0
+CPLEX_CUSTOM  = 1
+
 experiments = [
 	{
 		'enable': DISABLE,
@@ -36,8 +45,9 @@ experiments = [
 		'solver': BB,
 		'symmetry_breaker': ENABLE,
 		'iterations': 1,
-		'clique_only': ENABLE,
+		'select_cuts': CUTS_CLIQUE_ONLY,
 		'load_limit': 30,
+		'default_config': CPLEX_CUSTOM,
 		'traversal_strategy': CPX_NODESEL_BESTBOUND,
 		'branching_strategy': CPX_VARSEL_DEFAULT,	
 		'settings': {
@@ -47,7 +57,7 @@ experiments = [
 			'ylabel': 'Time (secs)',
 			'title' : 'Branch & Bound vs. Branch & Cut ({vertex_size} nodes, {partition_size} partitions)',
 			'xticks': ('10%', '20%', '30%', '40%', '50%', '60%', '70%', '80%', '90%', 'clique'),
-			'filename': "../docs/img/bb_vs_bc_v{vertex_size}_p{partition_size}_i{iterations}_co{clique_only}_l{load_limit}_t{traversal_strategy}_b{branching_strategy}"
+			'filename': "../docs/img/bb_vs_bc_v{vertex_size}_p{partition_size}_i{iterations}_co{select_cuts}_l{load_limit}_t{traversal_strategy}_b{branching_strategy}"
 		}
 	},
 	{
@@ -65,8 +75,9 @@ experiments = [
 		'solver': BB,
 		'symmetry_breaker': ENABLE,
 		'iterations': 1,
-		'clique_only': ENABLE,
+		'select_cuts': CUTS_CLIQUE_ONLY,
 		'load_limit': 30,
+		'default_config': CPLEX_CUSTOM,
 		'traversal_strategy': CPX_NODESEL_BESTBOUND,
 		'branching_strategy': CPX_VARSEL_DEFAULT,	
 		'settings': {
@@ -94,8 +105,9 @@ experiments = [
 		'solver': BB,
 		'symmetry_breaker': ENABLE,
 		'iterations': 1,
-		'clique_only': ENABLE,
+		'select_cuts': CUTS_CLIQUE_ONLY,
 		'load_limit': 30,
+		'default_config': CPLEX_CUSTOM,
 		'traversal_strategy': CPX_NODESEL_BESTBOUND,
 		'branching_strategy': CPX_VARSEL_DEFAULT,	
 		'settings': {
@@ -105,7 +117,7 @@ experiments = [
 			'ylabel': 'Time (secs)',
 			'title' : 'Effect of number of partitions on runtime ({vertex_size} nodes)',
 			'xticks': range(20, 50, 5),
-			'filename': "../docs/img/partitions_v{vertex_size}_d{density}_p{partition_size}_i{iterations}_co{clique_only}_l{load_limit}_t{traversal_strategy}_b{branching_strategy}"
+			'filename': "../docs/img/partitions_v{vertex_size}_d{density}_p{partition_size}_i{iterations}_co{select_cuts}_l{load_limit}_t{traversal_strategy}_b{branching_strategy}"
 		}
 	},
 	{
@@ -123,8 +135,9 @@ experiments = [
 		'solver': BB,
 		'symmetry_breaker': ENABLE,
 		'iterations': 1,
-		'clique_only': ENABLE,
+		'select_cuts': CUTS_CLIQUE_ONLY,
 		'load_limit': 30,
+		'default_config': CPLEX_CUSTOM,
 		'traversal_strategy': CPX_NODESEL_BESTBOUND,
 		'branching_strategy': CPX_VARSEL_DEFAULT,	
 		'settings': {
@@ -163,7 +176,7 @@ def generateGraph(experiment):
 def solveLP(experiment):
 
 	# run graph coloring
-	command = './coloring {graph_filename} {solver} {partition_size} {symmetry_breaker} {iterations} {clique_only} {load_limit} {traversal_strategy} {branching_strategy}'
+	command = './coloring {graph_filename} {solver} {partition_size} {symmetry_breaker} {iterations} {select_cuts} {load_limit} {default_config} {traversal_strategy} {branching_strategy}'
 	res = subprocess.check_output(command.format(**experiment), shell=True, universal_newlines=False)
 
 	# find time taken to add cutting planes
@@ -179,18 +192,23 @@ def solveLP(experiment):
 
 	colors_used = int(findText("Colors used: ", "\n", res))
 
+	nodes_traversed = int(findText("Nodes traversed: ", "\n", res))
+
 	if experiment['solver'] == 1:
 		print "Result of Branch & Bound"
 	else:
 		print "Result of Branch & Cut"
-		print "Time taken by CP: %f" % (time_taken_cp)
-		print "Time taken by LP: %f" % (time_taken_lp)
+		print "Time taken by CP: %f" % time_taken_cp
+		print "Time taken by LP: %f" % time_taken_lp
 
 		clique_res = findText("Loaded ", " unsatisfied", res)
-		print "Clique restrictions loaded: %s" % (clique_res)
+		print "Clique restrictions loaded: %s" % clique_res
 	
-	print "Colors used: %d" % (colors_used)
-	print "Total time: %f" % (total_time)
+
+
+	print "Colors used: %d" % colors_used
+	print "Nodes traversed: %d" % nodes_traversed
+	print "Total time: %f" % total_time
 
 	return total_time
 

@@ -28,7 +28,7 @@ int loadAdyacencyColorRestriction(CPXENVptr& env, CPXLPptr& lp, int vertex_size,
 int loadSymmetryBreaker(CPXENVptr& env, CPXLPptr& lp, int partition_size);
 
 // cutting planes
-int loadCuttingPlanes(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int edge_size, int partition_size, bool* adjacencyList, int iterations, int load_limit, bool clique_only);
+int loadCuttingPlanes(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int edge_size, int partition_size, bool* adjacencyList, int iterations, int load_limit, int select_cuts);
 int maximalCliqueFamillyHeuristic(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int edge_size, int partition_size, bool* adjacencyList, double* sol, int load_limit);
 int loadUnsatisfiedCliqueRestriction(CPXENVptr& env, CPXLPptr& lp, int partition_size, const set<int>& clique, int color);
 
@@ -63,8 +63,8 @@ const char* colors[] = {"Blue", "Red", "Green", "Yellow", "Grey", "Green", "Pink
 
 int main(int argc, char **argv) {
 
-	if (argc != 10) {
-		printf("Usage: %s inputFile solver partitions symmetry_breaker iterations clique_only load_limit traversal_strategy branching_strategy\n", argv[0]);
+	if (argc != 11) {
+		printf("Usage: %s inputFile solver partitions symmetry_breaker iterations select_cuts load_limit default_config traversal_strategy branching_strategy\n", argv[0]);
 		exit(1);
 	}
 
@@ -72,10 +72,11 @@ int main(int argc, char **argv) {
 	int partition_size = atoi(argv[3]);
 	bool symmetry_breaker = (atoi(argv[4]) == 1);
 	int iterations = atoi(argv[5]);
-	bool clique_only = (atoi(argv[6]) == 1);
+	int select_cuts = atoi(argv[6]);              // 0: clique only, 1: oddhole only, 2: both
 	int load_limit = atoi(argv[7]);
-	int traversal_strategy = atoi(argv[7]);
-	int branching_strategy = atoi(argv[9]);
+	int default_config = atoi(argv[8]);           // 0: default, 1: custom
+	int traversal_strategy = atoi(argv[9]);
+	int branching_strategy = atoi(argv[10]);
 
 	if (solver == 1) {
 		printf("Solver: Branch & Bound\n");
@@ -162,7 +163,7 @@ int main(int argc, char **argv) {
 	lp = CPXcreateprob(env, &status, "Instance of partitioned graph coloring.");
 	checkStatus(env, status);
 
-	setBranchAndBoundConfig(env);
+	if (default_config == 0) setBranchAndBoundConfig(env);
 	setTraversalStrategy(env, traversal_strategy);
 	setBranchingVariableStrategy(env, branching_strategy);
 
@@ -178,7 +179,7 @@ int main(int argc, char **argv) {
 
 	if (symmetry_breaker) loadSymmetryBreaker(env, lp, partition_size);
 
-	if (solver != 1) loadCuttingPlanes(env, lp, vertex_size, edge_size, partition_size, adjacencyList, iterations, load_limit, clique_only);
+	if (solver != 1) loadCuttingPlanes(env, lp, vertex_size, edge_size, partition_size, adjacencyList, iterations, load_limit, select_cuts);
 		
 	// write LP formulation to file, great to debug.
 	status = CPXwriteprob(env, lp, "graph.lp", NULL);
@@ -446,7 +447,7 @@ int loadSymmetryBreaker(CPXENVptr& env, CPXLPptr& lp, int partition_size) {
 	return 0;
 }
 
-int loadCuttingPlanes(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int edge_size, int partition_size, bool* adjacencyList, int iterations, int load_limit, bool clique_only) {
+int loadCuttingPlanes(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int edge_size, int partition_size, bool* adjacencyList, int iterations, int load_limit, int select_cuts) {
 
 	printf("Finding Cutting Planes.\n");
 
@@ -470,6 +471,7 @@ int loadCuttingPlanes(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int edge_si
 		status = CPXgetx(env, lp, sol, 0, n - 1);
 		checkStatus(env, status);
 
+		// print relaxation result
 		// for (int id = 1; id <= vertex_size; ++id) {
 		// 	for (int color = 1; color <= partition_size; ++color) {
 		// 		int index = getVertexIndex(id, color, partition_size);
@@ -478,12 +480,8 @@ int loadCuttingPlanes(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int edge_si
 		// 	}
 		// }
 
-		// if (oddhole_familly.size() > 0) {
-		// 	unsatisfied_restrictions += findUnsatisfiedOddholeRestrictions(env, lp, oddhole_familly, vertex_size, partition_size, n, sol);
-		// }
-
-		if (!clique_only) unsatisfied_restrictions += oddholeFamillyHeuristic(env, lp, vertex_size, edge_size, partition_size, adjacencyList, sol, load_limit);
-		unsatisfied_restrictions += maximalCliqueFamillyHeuristic(env, lp, vertex_size, edge_size, partition_size, adjacencyList, sol, load_limit);
+		if (select_cuts == 0 || select_cuts == 2) unsatisfied_restrictions += maximalCliqueFamillyHeuristic(env, lp, vertex_size, edge_size, partition_size, adjacencyList, sol, load_limit);
+		if (select_cuts == 1 || select_cuts == 2) unsatisfied_restrictions += oddholeFamillyHeuristic(env, lp, vertex_size, edge_size, partition_size, adjacencyList, sol, load_limit);
 
 		if (unsatisfied_restrictions == 0) break;
 
@@ -548,8 +546,6 @@ int maximalCliqueFamillyHeuristic(CPXENVptr& env, CPXLPptr& lp, int vertex_size,
 
 	printf("Loaded %d/%d unsatisfied clique restrictions! (all colors)\n", loaded, (int) clique_familly.size());
 
-	// printf("Familly generated (size: %d)\n", (int) clique_familly.size());
-
 	return loaded;
 }
 
@@ -598,7 +594,7 @@ int oddholeFamillyHeuristic(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int e
 
 	int loaded = 0;
 
-	vector<tuple<double, int, set<int> > > path_familly;
+	vector<tuple<double, int, set<int> > > path_familly; // dif, color, path
 
 	for (int color = 1; color <= partition_size; ++color) {
 
@@ -607,7 +603,7 @@ int oddholeFamillyHeuristic(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int e
 			if (sol[getVertexIndex(id, color, partition_size)] == 0) continue;
 
 			double sum = 0;
-			set<int> path; // dif, color, path
+			set<int> path;
 			path.insert(id);
 			for (int id2 = id + 1; id2 <= vertex_size; ++id2) {
 				if (sol[getVertexIndex(id2, color, partition_size)] == 0) continue;
@@ -649,49 +645,8 @@ int oddholeFamillyHeuristic(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int e
 
 	printf("Loaded %d/%d unsatisfied oddhole restrictions! (all colors)\n", loaded, (int) path_familly.size());
 
-	// printf("Familly generated (size: %d)\n", (int) clique_familly.size());
-
 	return loaded;
 }
-
-// int oddholeFamillyHeuristic(set<set<int> >& oddhole_familly, int vertex_size, int edge_size, int partition_size, bool* adjacencyList) {
-
-// 	printf("Generating oddhole familly.\n");
-
-// 	for (int id = 1; id <= vertex_size; ++id) {
-// 		set<int> path;
-// 		path.insert(id);
-// 		for (int id2 = id + 1; id2 <= vertex_size; ++id2) {
-// 			if (isAdyacent(*(--path.end()), id2, vertex_size, adjacencyList)) {
-// 				path.insert(id2);
-// 			}
-// 		}
-
-// 		while (path.size() >= 3 && (path.size() % 2 == 0 || 
-// 			!isAdyacent(*path.begin(), *(--path.end()), vertex_size, adjacencyList))) {
-// 			path.erase(--path.end());
-// 		}
-
-// 		if (path.size() >= 3 && isAdyacent(*path.begin(), *(--path.end()), vertex_size, adjacencyList)) {
-// 			oddhole_familly.insert(path);
-// 		}
-// 	}
-
-// 	// print the familly
-// 	// for (set<set<int> >::iterator it = oddhole_familly.begin(); it != oddhole_familly.end(); ++it) {
-// 	// 	cout << "Path: ";
-// 	// 	for (set<int>::iterator it2 = it->begin(); it2 != it->end(); ++it2) {
-// 	// 		cout << *it2 << " ";
-// 	// 	}
-// 	// 	cout << endl;
-// 	// }
-
-// 	int familly_size = oddhole_familly.size();
-
-// 	printf("Familly generated (size: %d)\n", familly_size);
-
-// 	return familly_size;
-// }
 
 int loadUnsatisfiedOddholeRestriction(CPXENVptr& env, CPXLPptr& lp, int partition_size, const set<int>& path, int color) {
 
@@ -829,10 +784,13 @@ int solveLP(CPXENVptr& env, CPXLPptr& lp, int edge_size, int vertex_size, int pa
 	status = CPXgetx(env, lp, sol, 0, n - 1);
 	checkStatus(env, status);
 
+ 	int nodes_traversed = CPXgetnodecnt(env, lp);
+
 	// write solutions to current window
 	cout << "Optimization result: " << statstring << endl;
 	cout << "Time taken to solve final LP: " << (endtime - inittime) << endl;
 	cout << "Colors used: " << objval << endl;
+	cout << "Nodes traversed: " << nodes_traversed << endl;
 	for (int color = 1; color <= partition_size; ++color) {
 		if (sol[color-1] == 1) {
 			cout << "w_" << color << " = " << sol[color-1] << " (" << colors[color-1] << ")" << endl;
