@@ -69,19 +69,19 @@ Esto es claramente equivalente a lo que queremos demostrar y se puede justificar
 \end{itemize}
 \end{proof}
 
-\subsection{Desigualdad de Aujero Impar}
+\subsection{Desigualdad de agujero Impar}
 
-Sea $j_0 \in \{1,...,n\}$ y sea $C_{2k+1} = v_1,...,v_{2k+1}$, $k \geq 2$, un aujero de longitud impar. La desigualdad esta definida por:
+Sea $j_0 \in \{1,...,n\}$ y sea $C_{2k+1} = v_1,...,v_{2k+1}$, $k \geq 2$, un agujero de longitud impar. La desigualdad esta definida por:
 
 \begin{equation}
 \sum_{p \in C_{2k+1}} x_{pj_0} \leq k w_{j0}
 \end{equation}
 
 \begin{proof}
-Por teoremas de coloreo (que se prueban en general por inducción), sabemos que el numero cromático $\chi(C) = 3$. En el peor de los casos, cada vértice del aujero estara en una partición diferente. Aqui nuevamente tenemos dos casos:
+Por teoremas de coloreo (que se prueban en general por inducción), sabemos que el numero cromático $\chi(C) = 3$. En el peor de los casos, cada vértice del agujero estara en una partición diferente. Aqui nuevamente tenemos dos casos:
 
 \begin{itemize}
-\item Si no se asigna el color $j_0$ a algun vértice del aujero, la desigualdad vale.
+\item Si no se asigna el color $j_0$ a algun vértice del agujero, la desigualdad vale.
 \item Si se asigna el color $j_0$, en el peor de los casos el mismo sera utilizado por a lo sumo $(|C|-1)/2$ vértices. Como $|C| = 2k+1$,  $(2k+1-1)/2 = k$. Por lo tanto vale la desigualdad.  \hfill $\square$
 \end{itemize}
 
@@ -144,12 +144,12 @@ Notar que en la practica solo consideramos cliques de tamaño mayor a 2, dado qu
 
 \pagebreak
 
-\subsubsection{Heurística de Separación para Aujero Impar}
+\subsubsection{Heurística de Separación para agujero Impar}
 
 Para esta heurística, seguimos un procedimiento similar al anterior. Recorremos los vértices en orden, y los vamos agregando si son adyacentes. Al final, el conjunto de vértices resultante es un camino. Luego, vemos si el ultimo elemento del camino es adyacente al primero y si el camino tiene longitud impar. Si esto sucede, agregamos el conjunto a la familia. Si no sucede, quitamos el ultimo elemento y verificamos nuevamente la condición hasta que se satisfaga. Finalmente, agregamos las mejores $threshold$ desigualdades por score. Este procedimiento se puede ilustrar con el siguiente pseudocódigo:
 
 \begin{algorithm}
-\caption{Algoritmo para agregar aujeros impares violados}
+\caption{Algoritmo para agregar agujeros impares violados}
 \begin{algorithmic}[1]
 \Procedure{generateOddholeFamilly}{$V,E,sol,threshold, lp$}
 \State $set<score, set<int>> oddhole\_familly$
@@ -185,6 +185,6 @@ Notar que en ambas heurísticas utilizamos la tolerancia $\epsilon$ para evitar 
 
 \subsection{Cut \& Branch}
 
-Dado que las familias de desigualdades anteriormente expuestas no describen de forma exhaustiva la cápsula convexa del problema, los algoritmos de planos de corte no necesariamente convergen. Por esta razón decidimos implementar un algoritmo de Cut \& Branch. Los algoritmos Cut \& Branch buscan aplicar planos de corte a la raíz del árbol de enumeración de Branch \& Bound, lo que \textit{potencialmente} puede mejorar el tiempo de ejecución de los problemas al reducir el espacio de búsqueda y permitiendo mejores podas. Una vez aplicados los cortes, se resuelve el problema resultante mediante Branch \& Cut.
+Dado que las familias de desigualdades anteriormente expuestas no describen de forma exhaustiva la cápsula convexa del problema, los algoritmos de planos de corte no necesariamente convergen. Por esta razón decidimos implementar un algoritmo Cut \& Branch. Los algoritmos Cut \& Branch buscan aplicar planos de corte a la raíz del árbol de enumeración de Branch \& Bound, lo que \textit{potencialmente} puede mejorar el tiempo de ejecución de los problemas al reducir el espacio de búsqueda y permitiendo mejores podas. Una vez aplicados los cortes, se resuelve el problema resultante mediante Branch \& Cut.
 
 En nuestra implementación, los parámetros que deben ser calibrados para este algoritmo son la cantidad de iteraciones y el threshold. Por cada iteración, el algoritmo resuelve la relajación del problema y agrega a lo sumo $threshold$ restricciones de cada tipo.

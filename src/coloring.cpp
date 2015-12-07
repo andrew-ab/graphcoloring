@@ -38,6 +38,7 @@ int loadUnsatisfiedOddholeRestriction(CPXENVptr& env, CPXLPptr& lp, int partitio
 // cplex functions
 int solveLP(CPXENVptr& env, CPXLPptr& lp, int edge_size, int vertex_size, int partition_size);
 int convertVariableType(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int partition_size, char vtype);
+int setCPLEXConfig(CPXENVptr& env);
 int setTraversalStrategy(CPXENVptr& env, int strategy);
 int setBranchingVariableStrategy(CPXENVptr& env, int strategy);
 int setBranchAndBoundConfig(CPXENVptr& env);
@@ -163,6 +164,7 @@ int main(int argc, char **argv) {
 	lp = CPXcreateprob(env, &status, "Instance of partitioned graph coloring.");
 	checkStatus(env, status);
 
+	setCPLEXConfig(env);
 	if (custom_config == 1) setBranchAndBoundConfig(env);
 	setTraversalStrategy(env, traversal_strategy);
 	setBranchingVariableStrategy(env, branching_strategy);
@@ -862,6 +864,22 @@ int setBranchingVariableStrategy(CPXENVptr& env, int strategy) {
 	return 0;
 }
 
+int setCPLEXConfig(CPXENVptr& env) {
+	// maximize objective function
+	// CPXchgobjsen(env, lp, CPX_MAX);
+
+	// enable/disable screen output
+	CPXsetintparam(env, CPX_PARAM_SCRIND, CPX_OFF);
+
+	// set excecution limit
+	CPXsetdblparam(env, CPX_PARAM_TILIM, 300);
+
+	// measure time in CPU time
+	// CPXsetintparam(env, CPX_PARAM_CLOCKTYPE, CPX_ON);
+
+	return 0;
+}
+
 int setBranchAndBoundConfig(CPXENVptr& env) {
 
 	// CPLEX config
@@ -873,15 +891,6 @@ int setBranchAndBoundConfig(CPXENVptr& env) {
 	CPXsetintparam(env, CPX_PARAM_RELAXPREIND, 0);
 	CPXsetintparam(env, CPX_PARAM_REDUCE, 0);
 	CPXsetintparam(env, CPX_PARAM_LANDPCUTS, -1);
-
-	// maximize objective function
-	// CPXchgobjsen(env, lp, CPX_MAX);
-
-	// enable/disable screen output
-	CPXsetintparam(env, CPX_PARAM_SCRIND, CPX_OFF);
-
-	// set excecution limit
-	CPXsetdblparam(env, CPX_PARAM_TILIM, 3600);
 	
 	// disable presolve
 	// CPXsetintparam(env, CPX_PARAM_PREIND, CPX_OFF);
@@ -897,9 +906,6 @@ int setBranchAndBoundConfig(CPXENVptr& env) {
 
 	// disable gomory fractional cuts
 	CPXsetintparam(env, CPX_PARAM_FRACCUTS, -1);
-
-	// measure time in CPU time
-	// CPXsetintparam(env, CPX_PARAM_CLOCKTYPE, CPX_ON);
 
 	return 0;
 }
