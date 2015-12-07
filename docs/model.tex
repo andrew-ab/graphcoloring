@@ -1,10 +1,10 @@
 \section{Modelo}
 
-Dado un grafo $G(V,E)$ con $n = |V|$ vertices y $m = |E|$ aristas,  un coloreo de G se define como una asignacion de un color o etiqueta a cada $v \in V$ de forma tal que para todo  par de vertices adyacentes $(p,q) \in E$ poseen colores distintos. El clasico problema de \textit{coloreo de grafos} consiste en encontrar un coloreo del grafo que utilize la menor cantidad de colores posibles.
+Dado un grafo $G(V,E)$ con $n = |V|$ vértices y $m = |E|$ aristas,  un coloreo de G se define como una asignación de un color o etiqueta a cada $v \in V$ de forma tal que para todo  par de vértices adyacentes $(p,q) \in E$ poseen colores distintos. El clásico problema de \textit{coloreo de grafos} consiste en encontrar un coloreo del grafo que utilice la menor cantidad de colores posibles.
 
-En este trabajo resolveremos una variante de este problema, el \textit{coloreo particionado de grafos}. A partir de un conjunto de vertices $V$ que se encuentra particionado en $V_1,...,V_k$, el problema consiste en asignar un color $c \in C$ a solo un vertice de cada particion de forma tal que dos vertices adyacentes no reciban el mismo color y minimizando la cantidad de colores utilizados.
+En este trabajo resolveremos una variante de este problema, el \textit{coloreo particionado de grafos}. A partir de un conjunto de vértices $V$ que se encuentra particionado en $V_1,...,V_k$, el problema consiste en asignar un color $c \in C$ a solo un vértice de cada partición de forma tal que dos vértices adyacentes no reciban el mismo color y minimizando la cantidad de colores utilizados.
 
-Este problema se puede modelar con Programacion Lineal Entera. Para ello, definamos las siguientes variables:
+Este problema se puede modelar con Programación Lineal Entera. Para ello, definamos las siguientes variables:
 
 \hspace{1px}
 
@@ -22,9 +22,9 @@ $w_j = \begin{cases}
 \end{cases}$
 \end{center}
 
-\subsection{Funcion objetivo}
+\subsection{Función objetivo}
 
-De esta forma la funcion objetivo del LP consiste en minimizar la cantidad de colores utilizados:
+De esta forma la función objetivo del LP consiste en minimizar la cantidad de colores utilizados:
 \begin{equation}
 min \sum_{j \in C} w_j
 \end{equation}
@@ -36,12 +36,12 @@ Notar que $|C|$ esta acotado superiormente por la cantidad de particiones $k$.
 \subsection{Restricciones}
 \label{restricciones}
 
-Los vertices adyacentes no comparten color. Recordar que no necesariamente se le asigna un color a todo vertice.
+Los vértices adyacentes no comparten color. Recordar que no necesariamente se le asigna un color a todo vértice.
 \begin{equation}
 x_{ij} + x_{kj} \leq 1 \;\;\;\;\; \forall (i,k) \in E,\;\; \forall j \in C
 \end{equation}
 
-Solo se le asigna un color a un unico vertice de cada particion $p \in P$. Esto implica que cada vertice tiene a lo sumo solo un color.
+Solo se le asigna un color a un único vértice de cada partición $p \in P$. Esto implica que cada vértice tiene a lo sumo solo un color.
 \begin{equation}
 \sum_{i \in V_p} \sum_{j \in C} x_{ij} = 1 \;\;\;\;\; \forall p \in P
 \end{equation}
@@ -60,9 +60,9 @@ x_{ij} \in \{0,1\} \;\;\;\;\; \forall i \in V, \forall j \in C
 w_j \in \{0,1\} \;\;\;\;\; \forall j \in C
 \end{equation}
 
-\subsection{Eliminacion de simetrias}
+\subsection{Eliminación de simetrías}
 
-Una de nuestras ideas para eliminar las simetrias fue usar la clasica condicion de coloreo que dice que los colores se deben utilizar en orden. Aunque existen otras, notamos que esta condicion mejoro ampliamente la ejecucion del LP. Formalmente, se puede expresar como:
+Una de nuestras ideas para eliminar las simetrías fue usar la clásica condición de coloreo que dice que los colores se deben utilizar en orden. Aunque existen otras, notamos que esta condicion mejoro ampliamente la ejecución del LP. Formalmente, se puede expresar como:
 
 \begin{equation}
 w_j \geq w_{j+1} \;\;\;\;\; \forall \; 1 \leq j \leq |C|

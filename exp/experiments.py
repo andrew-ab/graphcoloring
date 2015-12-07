@@ -1,3 +1,8 @@
+# Experiments for LP configurations
+# Advice: Next time, generate csv dataset first, then generate graphs from the dataset,
+# the code ends up being much cleaner and it's easier to generate new graphs without
+# having to re-generate the whole thing.
+
 # parameters
 ENABLE  = 1;
 DISABLE = 0;
@@ -13,11 +18,11 @@ CPX_NODESEL_BESTEST     = 2 # Best-estimate search
 CPX_NODESEL_BESTEST_ALT = 3 # Alternative best-estimate search 
 
 # variable selection
-CPX_VARSEL_MININFEAS 	 = -1 # Branch on variable with minimum infeasibility
-CPX_VARSEL_DEFAULT   	 = 0  # Automatic: let CPLEX choose variable to branch on; default
-CPX_VARSEL_MAXINFEAS 	 = 1  # Branch on variable with maximum infeasibility
-CPX_VARSEL_PSEUDO 	   	 = 2  # Branch based on pseudo costs
-CPX_VARSEL_STRONG 		 = 3  # Strong branching
+CPX_VARSEL_MININFEAS     = -1 # Branch on variable with minimum infeasibility
+CPX_VARSEL_DEFAULT       = 0  # Automatic: let CPLEX choose variable to branch on; default
+CPX_VARSEL_MAXINFEAS     = 1  # Branch on variable with maximum infeasibility
+CPX_VARSEL_PSEUDO        = 2  # Branch based on pseudo costs
+CPX_VARSEL_STRONG        = 3  # Strong branching
 CPX_VARSEL_PSEUDOREDUCED = 4  # Branch based on pseudo reduced costs
 
 # select cuts
@@ -31,23 +36,23 @@ CPLEX_CUSTOM  = 1
 
 experiments = [
 	{
-		'enable': DISABLE,
+		'enable': ENABLE,
 		'type': 1,
-		'description:': 'Different combinations of amount of nodes, partitions and densities.',
+		'description': 'Different combinations of amount of vertices, partitions and densities.',
 		'graph_type': 1,
 		'graph_filename': 'graph',
 		'vertex_size': 0,
-		'vertex_sizes': [40,150,20],
+		'vertex_sizes': [20,40],
 		'density': 0,
-		'density_range': [10,100,10],
+		'density_range': [30, 50],
 		'partition_size': 0,
-		'partitions_sizes': [20,70,10],
+		'partitions_sizes': [10,20],
 		'solver': BB,
 		'symmetry_breaker': ENABLE,
 		'iterations': 1,
 		'select_cuts': CUTS_CLIQUE_ONLY,
-		'load_limit': 30,
-		'default_config': CPLEX_CUSTOM,
+		'load_limit': 40,
+		'custom_config': CPLEX_CUSTOM,
 		'traversal_strategy': CPX_NODESEL_BESTBOUND,
 		'branching_strategy': CPX_VARSEL_DEFAULT,	
 		'settings': {
@@ -55,29 +60,29 @@ experiments = [
 			'label2': 'Branch & Cut',
 			'xlabel': 'Graph density',
 			'ylabel': 'Time (secs)',
-			'title' : 'Branch & Bound vs. Branch & Cut ({vertex_size} nodes, {partition_size} partitions)',
-			'xticks': ('10%', '20%', '30%', '40%', '50%', '60%', '70%', '80%', '90%', 'clique'),
-			'filename': "../docs/img/bb_vs_bc_v{vertex_size}_p{partition_size}_i{iterations}_co{select_cuts}_l{load_limit}_t{traversal_strategy}_b{branching_strategy}"
+			'title' : 'Branch & Bound vs. Branch & Cut Time ({vertex_size} vertices, {partition_size} partitions)',
+			'xticks': ('30%', '50%', '70%', '90%'),
+			'filename': "../docs/img/{type}-bb_vs_bc_v{vertex_size}_p{partition_size}_i{iterations}_co{select_cuts}_l{load_limit}_t{traversal_strategy}_b{branching_strategy}"
 		}
 	},
 	{
-		'enable': DISABLE,
+		'enable': ENABLE,
 		'type': 2,
-		'description:': 'Effect of breaking the symmetry.',
+		'description': 'Effect of breaking the symmetry.',
 		'graph_type': 1,
 		'graph_filename': 'graph',
 		'vertex_size': 0,
 		'vertex_sizes': [20,30,5],
 		'density': 0,
-		'density_range': [10,100,10],
+		'density_range': [10,90,10],
 		'partition_size': 0,
 		'partitions_sizes': [5,15,5],
 		'solver': BB,
 		'symmetry_breaker': ENABLE,
 		'iterations': 1,
 		'select_cuts': CUTS_CLIQUE_ONLY,
-		'load_limit': 30,
-		'default_config': CPLEX_CUSTOM,
+		'load_limit': 40,
+		'custom_config': CPLEX_CUSTOM,
 		'traversal_strategy': CPX_NODESEL_BESTBOUND,
 		'branching_strategy': CPX_VARSEL_DEFAULT,	
 		'settings': {
@@ -85,59 +90,56 @@ experiments = [
 			'label2': 'Branch & Bound Breaking Symmetry',
 			'xlabel': 'Graph density',
 			'ylabel': 'Time (secs)',
-			'title' : 'Symmetry Breakers ({vertex_size} nodes, {partition_size} partitions)',
-			'xticks': [('10%', '20%', '30%', '40%', '50%', '60%', '70%', '80%', '90%', 'clique')],
-			'filename': "../docs/img/symmetry_v{vertex_size}_p{partition_size}_l{load_limit}_t{traversal_strategy}_b{branching_strategy}"
+			'title' : 'Symmetry Breakers ({vertex_size} vertices, {partition_size} partitions)',
+			'xticks': ('10%', '20%', '30%', '40%', '50%', '60%', '70%', '80%', '90%', 'clique'),
+			'filename': "../docs/img/{type}-symmetry_v{vertex_size}_p{partition_size}_l{load_limit}_t{traversal_strategy}_b{branching_strategy}"
 		}
 	},
 	{
 		'enable': ENABLE,
 		'type': 3,
-		'description:': 'Performance as the number of partitions increase.',
+		'description': 'Performance as the number of partitions increase.',
 		'graph_type': 1,
 		'graph_filename': 'graph',
-		'vertex_size': 50,
-		'vertex_sizes': [30,40,10],
+		'vertex_size': 40,
 		'density': 20,
-		'density_range': [50,60,10],
+		'density_range': [30, 50, 70, 90],
 		'partition_size': 0,
-		'partitions_sizes': [20, 50, 5],
+		'partitions_sizes': [10, 35, 5],
 		'solver': BB,
 		'symmetry_breaker': ENABLE,
 		'iterations': 1,
 		'select_cuts': CUTS_CLIQUE_ONLY,
-		'load_limit': 30,
-		'default_config': CPLEX_CUSTOM,
+		'load_limit': 40,
+		'custom_config': CPLEX_CUSTOM,
 		'traversal_strategy': CPX_NODESEL_BESTBOUND,
 		'branching_strategy': CPX_VARSEL_DEFAULT,	
 		'settings': {
 			'label1': 'Branch & Bound',
 			'label2': 'Branch & Cut',
-			'xlabel': 'Number of partitions',
+			'xlabel': 'Partitions',
 			'ylabel': 'Time (secs)',
-			'title' : 'Effect of number of partitions on runtime ({vertex_size} nodes)',
+			'title' : 'Effect of number of partitions on runtime ({vertex_size} vertices)',
 			'xticks': range(20, 50, 5),
-			'filename': "../docs/img/partitions_v{vertex_size}_d{density}_p{partition_size}_i{iterations}_co{select_cuts}_l{load_limit}_t{traversal_strategy}_b{branching_strategy}"
+			'filename': "../docs/img/{type}-partitions_v{vertex_size}_d{density}_p{partition_size}_i{iterations}_co{select_cuts}_l{load_limit}_t{traversal_strategy}_b{branching_strategy}"
 		}
 	},
 	{
-		'enable': DISABLE,
+		'enable': ENABLE,
 		'type': 4,
-		'description:': 'Effect of increasing the number of nodes.',
+		'description': 'Effect of increasing the number of nodes.',
 		'graph_type': 1,
 		'graph_filename': 'graph',
 		'vertex_size': 0,
 		'vertex_sizes': [20,105,5],
 		'density': 50,
-		'density_range': [10,10,10],
-		'partition_size': 10,
-		'partitions_sizes': [10,15,5],
+		'partition_size': 20,
 		'solver': BB,
 		'symmetry_breaker': ENABLE,
 		'iterations': 1,
 		'select_cuts': CUTS_CLIQUE_ONLY,
-		'load_limit': 30,
-		'default_config': CPLEX_CUSTOM,
+		'load_limit': 40,
+		'custom_config': CPLEX_CUSTOM,
 		'traversal_strategy': CPX_NODESEL_BESTBOUND,
 		'branching_strategy': CPX_VARSEL_DEFAULT,	
 		'settings': {
@@ -147,7 +149,96 @@ experiments = [
 			'ylabel': 'Time (secs)',
 			'title' : 'Effect of increasing the number of nodes ({density}% density, {partition_size} partitions)',
 			'xticks': range(20,105,5),
-			'filename': "../docs/img/nodes_d{density}_p{partition_size}_l{load_limit}_t{traversal_strategy}_b{branching_strategy}"
+			'filename': "../docs/img/{type}-nodes_d{density}_p{partition_size}_l{load_limit}_t{traversal_strategy}_b{branching_strategy}"
+		}
+	},
+	{
+		'enable': ENABLE,
+		'type': 5,
+		'description': 'Cutting Plane Strategies.',
+		'graph_type': 1,
+		'graph_filename': 'graph',
+		'vertex_size': 60,
+		'density': 0,
+		'density_range': [30, 50, 70, 90],
+		'partition_size': 20,
+		'solver': BC,
+		'symmetry_breaker': ENABLE,
+		'iterations': 1,
+		'select_cuts': CUTS_CLIQUE_ONLY,
+		'load_limit': 40,
+		'custom_config': CPLEX_CUSTOM,
+		'traversal_strategy': CPX_NODESEL_BESTBOUND,
+		'branching_strategy': CPX_VARSEL_DEFAULT,	
+		'settings': {
+			'label1': 'B&C clique cuts',
+			'label2': 'B&C oddhole cuts',
+			'label3': 'B&C both',
+			'xlabel': 'Graph density',
+			'ylabel': 'Time (secs)',
+			'title' : 'Cutting Plane Strategies ({vertex_size} vertices, {partition_size} partitions)',
+			'xticks': ('30%', '50%', '70%', '90%'),
+			'filename': "../docs/img/{type}-cuts_v{vertex_size}_p{partition_size}_i{iterations}_co{select_cuts}_l{load_limit}_t{traversal_strategy}_b{branching_strategy}"
+		}
+	},
+	{
+		'enable': ENABLE,
+		'type': 6,
+		'description': 'Cutting Plane Thresholds',
+		'graph_type': 1,
+		'graph_filename': 'graph',
+		'vertex_size': 60,
+		'density': 50,
+		'partition_size': 20,
+		'partitions_sizes': [10,20],
+		'solver': BC,
+		'symmetry_breaker': ENABLE,
+		'iterations': 1,
+		'select_cuts': CUTS_CLIQUE_ONLY,
+		'load_limit': 40,
+		'load_limit_sizes': [10, 20, 30, 40, 50],
+		'custom_config': CPLEX_CUSTOM,
+		'traversal_strategy': CPX_NODESEL_BESTBOUND,
+		'branching_strategy': CPX_VARSEL_DEFAULT,	
+		'settings': {
+			'label1': 'C&B clique cuts',
+			'label2': 'C&B oddhole cuts',
+			'label3': 'C&B both',
+			'xlabel': 'Threshold',
+			'ylabel': 'Time (secs)',
+			'title' : 'Cutting Plane Thresholds ({vertex_size} vertices, {partition_size} partitions)',
+			'xticks': [10, 20 ,30 ,40 ,50],
+			'filename': "../docs/img/{type}-thresholds_v{vertex_size}_p{partition_size}_i{iterations}_co{select_cuts}_l{load_limit}_t{traversal_strategy}_b{branching_strategy}"
+		}
+	},
+	{
+		'enable': ENABLE,
+		'type': 7,
+		'description': 'Cutting Plane Iterations',
+		'graph_type': 1,
+		'graph_filename': 'graph',
+		'vertex_size': 60,
+		'density': 50,
+		'partition_size': 20,
+		'solver': BC,
+		'symmetry_breaker': ENABLE,
+		'iterations': 1,
+		'iteration_list': [1,2,3],
+		'select_cuts': CUTS_CLIQUE_ONLY,
+		'load_limit': 40,
+		'load_limit_sizes': [10, 20 ,30 ,40 ,50],
+		'custom_config': CPLEX_CUSTOM,
+		'traversal_strategy': CPX_NODESEL_BESTBOUND,
+		'branching_strategy': CPX_VARSEL_DEFAULT,	
+		'settings': {
+			'label1': 'C&B clique cuts',
+			'label2': 'C&B oddhole cuts',
+			'label3': 'C&B both',
+			'xlabel': 'Iterations',
+			'ylabel': 'Time (secs)',
+			'title' : 'Iterations ({vertex_size} vertices, {partition_size} partitions, {load_limit} threshold)',
+			'xticks': (1,2,3),
+			'filename': "../docs/img/{type}-iterations_v{vertex_size}_p{partition_size}_i{iterations}_co{select_cuts}_l{load_limit}_t{traversal_strategy}_b{branching_strategy}"
 		}
 	},
 ]
@@ -176,7 +267,7 @@ def generateGraph(experiment):
 def solveLP(experiment):
 
 	# run graph coloring
-	command = './coloring {graph_filename} {solver} {partition_size} {symmetry_breaker} {iterations} {select_cuts} {load_limit} {default_config} {traversal_strategy} {branching_strategy}'
+	command = './coloring {graph_filename} {solver} {partition_size} {symmetry_breaker} {iterations} {select_cuts} {load_limit} {custom_config} {traversal_strategy} {branching_strategy}'
 	res = subprocess.check_output(command.format(**experiment), shell=True, universal_newlines=False)
 
 	# find time taken to add cutting planes
@@ -201,41 +292,59 @@ def solveLP(experiment):
 		print "Time taken by CP: %f" % time_taken_cp
 		print "Time taken by LP: %f" % time_taken_lp
 
-		clique_res = findText("Loaded ", " unsatisfied", res)
+		clique_res = findText("Loaded ", " unsatisfied clique restrictions!", res)
 		print "Clique restrictions loaded: %s" % clique_res
 	
+		# oddhole_res = findText("Loaded ", " unsatisfied oddhole restrictions!", res) # fix substr
+		# print "Oddhole restrictions loaded: %s" % oddhole_res
 
 
 	print "Colors used: %d" % colors_used
 	print "Nodes traversed: %d" % nodes_traversed
 	print "Total time: %f" % total_time
 
-	return total_time
+	return {'total_time': total_time, 'nodes_traversed': nodes_traversed}
 
-def createGraph(time1, time2, experiment):
+def createGraph(time1, time2, time3, experiment):
 
 	n_groups = len(time1)
 
 	fig, ax = plt.subplots()
 
 	index = np.arange(n_groups)
-	bar_width = 0.35
+	bar_width = 0.2
 
 	opacity = 0.4
 	error_config = {'ecolor': '0.3'}
 
-	rects1 = plt.bar(index, time1, bar_width,
+
+	if len(time3) > 0:
+		s1 = bar_width*1/2
+		s2 = bar_width/2
+		s3 = bar_width*3/2
+	else:
+		s1 = 0
+		s2 = bar_width
+
+	rects1 = plt.bar(index - s1, time1, bar_width,
 	                 alpha=opacity,
 	                 color='b',
 	                 error_kw=error_config,
 	                 label=experiment['settings']['label1'])
 
 	if len(time2) > 0:
-		rects2 = plt.bar(index + bar_width, time2, bar_width,
+		rects2 = plt.bar(index + s2, time2, bar_width,
 		                 alpha=opacity,
 		                 color='r',
 		                 error_kw=error_config,
 		                 label=experiment['settings']['label2'])
+
+	if len(time3) > 0:
+		rects3 = plt.bar(index + s3, time3, bar_width,
+		                 alpha=opacity,
+		                 color='g',
+		                 error_kw=error_config,
+		                 label=experiment['settings']['label3'])	
 
 	plt.xlabel(experiment['settings']['xlabel'])
 	plt.ylabel(experiment['settings']['ylabel'])
@@ -249,11 +358,11 @@ def createGraph(time1, time2, experiment):
 
 def runExperiment1(experiment):
 
-	for partition_size in range(*experiment['partitions_sizes']):
+	for partition_size in experiment['partitions_sizes']:
 
 		experiment['partition_size'] = partition_size
 
-		for vertex_size in range(*experiment['vertex_sizes']):
+		for vertex_size in experiment['vertex_sizes']:
 
 			if partition_size > vertex_size:
 				continue;
@@ -266,10 +375,12 @@ def runExperiment1(experiment):
 
 			time1 = []
 			time2 = []
+			nodes1 = []
+			nodes2 = []
 
 			print "\nvertex_size: {vertex_size}, partition_size: {partition_size}".format(**experiment)
 
-			for density in range(*experiment['density_range']):
+			for density in experiment['density_range']:
 
 				print "Density %d" % density
 
@@ -278,16 +389,41 @@ def runExperiment1(experiment):
 				generateGraph(experiment)
 
 				experiment['solver'] = BB
-				ellapsed_time = solveLP(experiment)
-				time1.append(ellapsed_time)
+				sol = solveLP(experiment)
+				time1.append(sol['total_time'])
+				nodes1.append(sol['nodes_traversed'])
 
 				print "-"*20
 				experiment['solver'] = BC
-				ellapsed_time = solveLP(experiment)
-				time2.append(ellapsed_time)
+				sol = solveLP(experiment)
+				time2.append(sol['total_time'])
+				nodes2.append(sol['nodes_traversed'])
 				print "\n"
 
-			createGraph(time1, time2, experiment)
+			createGraph(time1, time2, [], experiment)
+
+			experiment['settings'] = {
+				'label1': 'Branch & Bound',
+				'label2': 'Branch & Cut',
+				'xlabel': 'Graph density',
+				'ylabel': 'Nodes',
+				'title' : 'Branch & Bound vs. Branch & Cut Nodes ({vertex_size} vertices, {partition_size} partitions)',
+				'xticks': ('30%', '50%', '70%', '90%'),
+				'filename': "../docs/img/{type}-bb_vs_bc_v{vertex_size}_p{partition_size}_i{iterations}_co{select_cuts}_l{load_limit}_t{traversal_strategy}_b{branching_strategy}_nodes"
+			}
+
+			createGraph(nodes1, nodes2, [], experiment)
+
+			experiment['settings'] = {
+				'label1': 'Branch & Bound',
+				'label2': 'Branch & Cut',
+				'xlabel': 'Graph density',
+				'ylabel': 'Time (secs)',
+				'title' : 'Branch & Bound vs. Branch & Cut Time ({vertex_size} vertices, {partition_size} partitions)',
+				'xticks': ('30%', '50%', '70%', '90%'),
+				'filename': "../docs/img/{type}-bb_vs_bc_v{vertex_size}_p{partition_size}_i{iterations}_co{select_cuts}_l{load_limit}_t{traversal_strategy}_b{branching_strategy}"
+			}
+
 
 def runExperiment2(experiment):
 
@@ -301,8 +437,6 @@ def runExperiment2(experiment):
 				continue;
 
 			experiment['vertex_size'] = vertex_size
-
-			print vertex_size
 
 			if os.path.isfile(experiment['settings']['filename'].format(**experiment)+".png"):
 				print "Experiment already exists."
@@ -322,40 +456,73 @@ def runExperiment2(experiment):
 				generateGraph(experiment)
 
 				experiment['symmetry_breaker'] = DISABLE
-				ellapsed_time = solveLP(experiment)
-				time1.append(ellapsed_time)
+				sol = solveLP(experiment)
+				time1.append(sol['total_time'])
 
 				print "-"*20
 				experiment['symmetry_breaker'] = ENABLE
-				ellapsed_time = solveLP(experiment)
-				time2.append(ellapsed_time)
+				sol = solveLP(experiment)
+				time2.append(sol['total_time'])
 				print "\n"
 
-			createGraph(time1, time2, experiment)
+			createGraph(time1, time2, [], experiment)
 
 def runExperiment3(experiment):
 
-	generateGraph(experiment)
+	for density in experiment['density_range']:
 
-	time1 = []
-	time2 = []
+		print "Density %d" % density
 
-	for partition_size in range(*experiment['partitions_sizes']):
+		experiment['density'] = density
 
-		experiment['partition_size'] = partition_size
+		generateGraph(experiment)
 
-		print "Partition size: %d" % partition_size
+		time1 = []
+		time2 = []
 
-		experiment['solver'] = BB
-		ellapsed_time = solveLP(experiment)
-		time1.append(ellapsed_time)
+		nodes1 = []
+		nodes2 = []
 
-		experiment['solver'] = BC
-		ellapsed_time = solveLP(experiment)
-		time2.append(ellapsed_time)
-		print "\n"
+		for partition_size in range(*experiment['partitions_sizes']):
 
-	createGraph(time1, time2, experiment)
+			experiment['partition_size'] = partition_size
+
+			print "Partition size: %d" % partition_size
+
+			experiment['solver'] = BB
+			sol = solveLP(experiment)
+			time1.append(sol['total_time'])
+			nodes1.append(sol['nodes_traversed'])
+
+			experiment['solver'] = BC
+			sol = solveLP(experiment)
+			time2.append(sol['total_time'])
+			nodes2.append(sol['nodes_traversed'])
+			print "\n"
+
+		createGraph(time1, time2, [], experiment)
+
+		experiment['settings'] = {
+			'label1': 'Branch & Bound',
+			'label2': 'Branch & Cut',
+			'xlabel': 'Partitions',
+			'ylabel': 'Nodes',
+			'title' : 'Effect of number of partitions on nodes traversed ({vertex_size} vertices)',
+			'xticks': range(20, 50, 5),
+			'filename': "../docs/img/{type}-partitions_v{vertex_size}_d{density}_p{partition_size}_i{iterations}_co{select_cuts}_l{load_limit}_t{traversal_strategy}_b{branching_strategy}_nodes"
+		}
+
+		createGraph(nodes1, nodes2, [], experiment)
+
+		experiment['settings'] = {
+			'label1': 'Branch & Bound',
+			'label2': 'Branch & Cut',
+			'xlabel': 'Partitions',
+			'ylabel': 'Time (secs)',
+			'title' : 'Effect of number of partitions on runtime ({vertex_size} vertices)',
+			'xticks': range(20, 50, 5),
+			'filename': "../docs/img/{type}-partitions_v{vertex_size}_d{density}_p{partition_size}_i{iterations}_co{select_cuts}_l{load_limit}_t{traversal_strategy}_b{branching_strategy}"
+		}
 
 def runExperiment4(experiment):
 
@@ -371,15 +538,164 @@ def runExperiment4(experiment):
 		print "Vertex size: %d" % vertex_size
 
 		experiment['solver'] = BB
-		ellapsed_time = solveLP(experiment)
-		time1.append(ellapsed_time)
+		sol = solveLP(experiment)
+		time1.append(sol['total_time'])
 
 		experiment['solver'] = BC
-		ellapsed_time = solveLP(experiment)
-		time2.append(ellapsed_time)
+		sol = solveLP(experiment)
+		time2.append(sol['total_time'])
 		print "\n"
 
-	createGraph(time1, time2, experiment)
+	createGraph(time1, time2, [], experiment)
+
+def runExperiment5(experiment):
+
+	time1 = []
+	time2 = []
+	time3 = []
+
+	nodes1 = []
+	nodes2 = []
+	nodes3 = []
+
+	for density in experiment['density_range']:
+
+		experiment['density'] = density
+
+		generateGraph(experiment)
+
+		print "Density: %d" % density
+
+		print "Clique only:"
+		experiment['select_cuts'] = CUTS_CLIQUE_ONLY
+		sol = solveLP(experiment)
+		time1.append(sol['total_time'])
+		nodes1.append(sol['nodes_traversed'])
+
+		print "Oddhole only:"
+		experiment['select_cuts'] = CUTS_ODDHOLE_ONLY
+		sol = solveLP(experiment)
+		time2.append(sol['total_time'])
+		nodes2.append(sol['nodes_traversed'])
+
+		print "All cuts:"
+		experiment['select_cuts'] = CUTS_ALL
+		sol = solveLP(experiment)
+		time3.append(sol['total_time'])
+		nodes3.append(sol['nodes_traversed'])
+
+		print "\n"
+
+	createGraph(time1, time2, time3, experiment)
+
+	experiment['settings'] = {
+		'label1': 'C&B clique cuts',
+		'label2': 'C&B oddhole cuts',
+		'label3': 'C&B both',
+		'xlabel': 'Density',
+		'ylabel': 'Nodes',
+		'title' : 'Cutting Plane Strategies ({vertex_size} vertices, {partition_size} partitions)',
+		'xticks': ('30%', '50%', '70%', '90%'),
+		'filename': "../docs/img/{type}-cuts_v{vertex_size}_p{partition_size}_i{iterations}_co{select_cuts}_l{load_limit}_t{traversal_strategy}_b{branching_strategy}_nodes"
+	}
+
+	createGraph(nodes1, nodes2, nodes3, experiment)
+
+def runExperiment6(experiment):
+
+	generateGraph(experiment)
+
+	time1 = []
+	time2 = []
+	time3 = []
+
+	nodes1 = []
+	nodes2 = []
+	nodes3 = []
+
+	for limit in experiment['load_limit_sizes']:
+
+		experiment['load_limit'] = limit;
+
+		experiment['select_cuts'] = CUTS_CLIQUE_ONLY
+		sol = solveLP(experiment)
+		time1.append(sol['total_time'])
+		nodes1.append(sol['nodes_traversed'])
+
+		experiment['select_cuts'] = CUTS_ODDHOLE_ONLY
+		sol = solveLP(experiment)
+		time2.append(sol['total_time'])
+		nodes2.append(sol['nodes_traversed'])
+
+		experiment['select_cuts'] = CUTS_ALL
+		sol = solveLP(experiment)
+		time3.append(sol['total_time'])
+		nodes3.append(sol['nodes_traversed'])
+
+		print "\n"
+
+	createGraph(time1, time2, time3, experiment)
+
+	experiment['settings'] = {
+		'label1': 'C&B clique cuts',
+		'label2': 'C&B oddhole cuts',
+		'label3': 'C&B both',
+		'xlabel': 'Threshold',
+		'ylabel': 'Nodes',
+		'title' : 'Cutting Plane Thresholds ({vertex_size} vertices, {partition_size} partitions)',
+		'xticks': [10, 20 ,30 ,40 ,50],
+		'filename': "../docs/img/{type}-thresholds_v{vertex_size}_p{partition_size}_i{iterations}_co{select_cuts}_l{load_limit}_t{traversal_strategy}_b{branching_strategy}_nodes"
+	}
+
+	createGraph(nodes1, nodes2, nodes3, experiment)
+
+def runExperiment7(experiment):
+
+	generateGraph(experiment)
+
+	time1 = []
+	time2 = []
+	time3 = []
+
+	nodes1 = []
+	nodes2 = []
+	nodes3 = []
+
+	for iterations in experiment['iteration_list']:
+
+		experiment['iterations'] = iterations;
+
+		experiment['select_cuts'] = CUTS_CLIQUE_ONLY
+		sol = solveLP(experiment)
+		time1.append(sol['total_time'])
+		nodes1.append(sol['nodes_traversed'])
+
+		experiment['select_cuts'] = CUTS_ODDHOLE_ONLY
+		sol = solveLP(experiment)
+		time2.append(sol['total_time'])
+		nodes2.append(sol['nodes_traversed'])
+
+		experiment['select_cuts'] = CUTS_ALL
+		sol = solveLP(experiment)
+		time3.append(sol['total_time'])
+		nodes3.append(sol['nodes_traversed'])
+
+		print "\n"
+
+	createGraph(time1, time2, time3, experiment)
+
+	experiment['settings'] = {
+		'label1': 'C&B clique cuts',
+		'label2': 'C&B oddhole cuts',
+		'label3': 'C&B both',
+		'xlabel': 'Iterations',
+		'ylabel': 'Nodes',
+		'title' : 'Iterations ({vertex_size} vertices, {partition_size} partitions, {load_limit} threshold)',
+		'xticks': (1,2,3),
+		'filename': "../docs/img/{type}-iterations_v{vertex_size}_p{partition_size}_i{iterations}_co{select_cuts}_l{load_limit}_t{traversal_strategy}_b{branching_strategy}_nodes"
+	}
+
+	createGraph(nodes1, nodes2, nodes3, experiment)
 
 if __name__ == "__main__":
 
@@ -388,7 +704,8 @@ if __name__ == "__main__":
 		if experiment['enable'] == DISABLE:
 			continue
 
-		print "Experiment type %s" % experiment['type']
+		print "Experiment #%s" % experiment['type']
+		print "Description: %s" % experiment['description']
 
 		if experiment['type'] == 1:
 			runExperiment1(experiment)
@@ -401,3 +718,12 @@ if __name__ == "__main__":
 
 		if experiment['type'] == 4:
 			runExperiment4(experiment)
+
+		if experiment['type'] == 5:
+			runExperiment5(experiment)
+
+		if experiment['type'] == 6:
+			runExperiment6(experiment)
+
+		if experiment['type'] == 7:
+			runExperiment7(experiment)

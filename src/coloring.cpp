@@ -18,7 +18,7 @@ int getVertexIndex(int id, int color, int partition_size);
 inline int fromMatrixToVector(int from, int to, int vertex_size);
 inline bool isAdyacent(int from, int to, int vertex_size, bool* adjacencyList);
 bool adyacentToAll(int id, int vertex_size, bool* adjacencyList, const set<int>& clique);
-bool cliqueNotContained(const set<int>& clique, const vector<tuple<double, int, set<int> > >& clique_familly);
+bool cliqueNotContained(const set<int>& clique, int color, const vector<tuple<double, int, set<int> > >& clique_familly);
 
 // load LP
 int loadObjectiveFunction(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int partition_size, char vtype);
@@ -64,7 +64,7 @@ const char* colors[] = {"Blue", "Red", "Green", "Yellow", "Grey", "Green", "Pink
 int main(int argc, char **argv) {
 
 	if (argc != 11) {
-		printf("Usage: %s inputFile solver partitions symmetry_breaker iterations select_cuts load_limit default_config traversal_strategy branching_strategy\n", argv[0]);
+		printf("Usage: %s inputFile solver partitions symmetry_breaker iterations select_cuts load_limit custom_config traversal_strategy branching_strategy\n", argv[0]);
 		exit(1);
 	}
 
@@ -74,7 +74,7 @@ int main(int argc, char **argv) {
 	int iterations = atoi(argv[5]);
 	int select_cuts = atoi(argv[6]);              // 0: clique only, 1: oddhole only, 2: both
 	int load_limit = atoi(argv[7]);
-	int default_config = atoi(argv[8]);           // 0: default, 1: custom
+	int custom_config = atoi(argv[8]);           // 0: default, 1: custom
 	int traversal_strategy = atoi(argv[9]);
 	int branching_strategy = atoi(argv[10]);
 
@@ -163,7 +163,7 @@ int main(int argc, char **argv) {
 	lp = CPXcreateprob(env, &status, "Instance of partitioned graph coloring.");
 	checkStatus(env, status);
 
-	if (default_config == 0) setBranchAndBoundConfig(env);
+	if (custom_config == 1) setBranchAndBoundConfig(env);
 	setTraversalStrategy(env, traversal_strategy);
 	setBranchingVariableStrategy(env, branching_strategy);
 
@@ -226,10 +226,10 @@ bool adyacentToAll(int id, int vertex_size, bool* adjacencyList, const set<int>&
 	return true;
 }
 
-bool cliqueNotContained(const set<int>& clique, const vector<tuple<double, int, set<int> > >& clique_familly) {
+bool cliqueNotContained(const set<int>& clique, int color, const vector<tuple<double, int, set<int> > >& clique_familly) {
 	for (vector<tuple<double, int, set<int> > >::const_iterator it = clique_familly.begin(); it != clique_familly.end(); ++it) {
 		// by construction, sets are already ordered.
-		if (includes(get<2>(*it).begin(), get<2>(*it).end(), clique.begin(), clique.end())) return false;
+		if (get<1>(*it) == color && includes(get<2>(*it).begin(), get<2>(*it).end(), clique.begin(), clique.end())) return false;
 	}
 	return true;
 }
@@ -522,7 +522,7 @@ int maximalCliqueFamillyHeuristic(CPXENVptr& env, CPXLPptr& lp, int vertex_size,
 				}
 			}
 			if (clique.size() > 2 && sum > sol[color-1] + TOL) {
-				if (cliqueNotContained(clique, clique_familly)) {
+				if (cliqueNotContained(clique, color, clique_familly)) {
 					double score = sum - sol[color-1];
 					clique_familly.push_back(tuple<double, int, set<int> >(score,color,clique));
 				}
@@ -623,8 +623,9 @@ int oddholeFamillyHeuristic(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int e
 				sum += sol[getVertexIndex(*it, color, partition_size)];
 			}
 
-			if (path.size() > 2 && sum > sol[color-1] + TOL) {
-				double score = sum - sol[color-1];
+			int k = (path.size() - 1) / 2;
+			if (path.size() > 2 && sum > k*sol[color-1] + TOL) {
+				double score = sum - k*sol[color-1];
 				path_familly.push_back(tuple<double, int, set<int> >(score,color,path));
 			}
 		}
