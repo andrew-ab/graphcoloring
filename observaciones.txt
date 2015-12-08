@@ -1,0 +1,16 @@
+- corregí algunas boludeces de tildes y redacción
+
+- en la parte de romper simetría, no va menor estricto en el tamaño de C?
+
+- en la demo de clique maximal, j0 no sale de todos los colores? por qué 1..n, si n es la cantidad de vértices? eventualmente k es la cantidad de colores / particiones.
+entiendo que en la demo un n es el tamaño de la clique, y el otro la cantidad de colores, no veo por qué serían el mismo n.
+
+- caso base n = 3, a la derecha me queda 1/3+1/3+1/3=1, por qué 3/2? creo que se multiplica por 1/2. también creo que hay algunos copypastes, no se ven los 12, 23, 13.
+
+- pusiste "familly" con doble l por algo en particular? (heurísticas)
+
+- "cliques violadas"??
+
+- el epsilon se corta en el pseudocódigo
+
+- 

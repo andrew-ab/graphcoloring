@@ -9,21 +9,31 @@ Sea $j_0 \in \{1,...,n\}$ y sea $K$ una clique maximal de $G$. La desigualdad cl
 \end{equation}
 
 \begin{proof}
-Para esta demostración utilizaremos las desigualdades Chvátal-Gomory sobre las restricciones del LP planteado en la sección \ref{restricciones} e inducción. A priori el teorema es bastante intuitivo. Si pinto algún vértice de una clique, no puedo pintar ninguno adyacente del mismo color sin importar la forma en la que particione los vértices del grafo. Sea $n$ el tamaño de la clique maximal.
+Para esta demostración utilizaremos las desigualdades Chvátal-Gomory sobre las restricciones del LP planteado en la sección \ref{restricciones} e inducción. A priori, el teorema es bastante intuitivo: si pinto algún vértice de una clique, no puedo pintar ninguno adyacente del mismo color sin importar la forma en la que particione los vértices del grafo. Sea $n$ el tamaño de la clique maximal.
 
 \hfill
 
 \textbf{Casos Base}
 \begin{enumerate}
-\item $n=1$: Si en la clique maximal tengo solo un vértice, no existe arista que contenga este vértice, caso contrario la clique tendría dos elementos. Por lo tanto, este vértice puede estar pintado o no dentro de la partición. Es decir, se cumple la ecuación que queremos probar.
-\item $n=2$: Si la clique maximal tiene dos elementos, por definición son conexos. Por la restricción que indica que los vértices adyacentes no comparten color, aquí hay 2 opciones. La primera opción es que a ningún vértice se le asigna un color $j_0$. La otra opción es que dada la estructura de particiones, se le asigne solo a uno de ellos el color $j_0$. Por lo tanto la desigualdad para $n=2$ vale.
-\item $n=3$: Este es el caso mas interesante en el que utilizamos la desigualdad de Chvátal-Gomory. Si la clique tiene 3 vértices, hay tres desigualdades que se deben cumplir:
+\item $n=1$: Si en la clique maximal tengo sólo un vértice, no existe arista que contenga este vértice, caso contrario la clique tendría al menos dos elementos. Por lo tanto, este vértice puede estar pintado o no dentro de la partición. Es decir, se cumple la ecuación que queremos probar.
+\item $n=2$: Si la clique maximal tiene dos elementos, por definición son conexos. Por la restricción que indica que los vértices adyacentes no comparten color, aquí hay 2 opciones. La primera opción es que a ningún vértice se le asigne el color $j_0$. La otra opción es que, dada la estructura de particiones, se le asigne sólo a uno de ellos el color $j_0$. Por lo tanto, vale la desigualdad para $n=2$.
+\item $n=3$: Este es el caso más interesante en el que utilizamos la desigualdad de Chvátal-Gomory. Si la clique tiene 3 vértices, hay tres desigualdades que se deben cumplir:
 
 \begin{itemize}
 \item $x_{1j_0} + x_{2j_0} \leq 1$
 \item $x_{2j_0} + x_{3j_0} \leq 1$
 \item $x_{1j_0} + x_{3j_0} \leq 1$
 \end{itemize}
+
+\textcolor{red}{Duda:
+Multiplicando todas estas desigualdades por $1/2$ y sumando entonces:
+$1/2 (x_{1j_0} + x_{2j_0})  + 1/2 (x_{2j_0} + x_{3j_0}) + 1/2 (x_{2j_0} + x_{3j_0}) \leq 3/2$
+Desarrollando: $x_{1j_0} + x_{2j_0} +  x_{3j_0} \leq 3/2$.
+Como $x_{ij}$ toma valores enteros, se implica:
+$x_{1j_0} + x_{2j_0} +  x_{3j_0} \leq 1$
+Utilizando la definición de $w_j$ entonces: $x_{1j_0} + x_{2j_0} +  x_{3j_0} \leq w_{j_0}$
+Por lo tanto la desigualdad vale para $n=3$.
+}
 
 Multiplicando todas estas desigualdades por $1/3$ y sumando entonces:
 
@@ -50,7 +60,13 @@ Como vale la hipótesis inductiva, sabemos que:
 \sum_{p \in K-n} x_{pj_0} \leq w_{j_0}
 \end{equation*}
 
-Al agregar un vértice a la clique, agregamos $n-1$ aristas:
+\textcolor{red}{
+\begin{equation*}
+\sum_{p \in K-(n-1)} x_{pj_0} \leq w_{j_0}
+\end{equation*}
+}
+
+Al agregar un vértice a la clique, agregamos $n-1$ aristas, por lo que deben cumplir:
 
 $x_{1j_0} + x_{nj_0} \leq 1$, $x_{2j_0} + x_{nj_0} \leq 1$,...,
 $x_{(n-1)j_0} + x_{nj_0} \leq 1$
@@ -58,14 +74,14 @@ $x_{(n-1)j_0} + x_{nj_0} \leq 1$
 Utilizando esto, podemos ver que:
 
 \begin{equation*}
-x_{nj_0} + \sum_{p \in K-n} x_{pj_0} \leq w_{j_0}
+x_{nj_0} + \sum_{p \in K-(n-1)} x_{pj_0} \leq w_{j_0}
 \end{equation*}
 
 Esto es claramente equivalente a lo que queremos demostrar y se puede justificar a partir de dos casos:
 
 \begin{itemize}
-\item Si al vértice $x_{nj_0}$ se le asigna un color, por las restricciones de las aristas que agregamos al resto de los vértices de la clique no se le puede asignar el color $j_0$.
-\item Si al vértice $x_{nj_0}$ no se le asigna un color o se le asigna un color diferente a $j_0$, por hipótesis inductiva sabemos que lo que queremos probar vale. \hfill $\square$
+\item Si al vértice $x_{nj_0}$ se le asigna el color $j_0$, las restricciones de las aristas agregadas agregamos hacen que al resto de los vértices de la clique no se le puede asignar el color $j_0$.
+\item Si al vértice $x_{nj_0}$ no se le asigna color, o se le asigna un color diferente a $j_0$, se obtiene la expresión de la hipótesis inductiva, y sabemos que lo que queremos probar vale. \hfill $\square$
 \end{itemize}
 \end{proof}
 
@@ -74,42 +90,42 @@ Esto es claramente equivalente a lo que queremos demostrar y se puede justificar
 Sea $j_0 \in \{1,...,n\}$ y sea $C_{2k+1} = v_1,...,v_{2k+1}$, $k \geq 2$, un agujero de longitud impar. La desigualdad esta definida por:
 
 \begin{equation}
-\sum_{p \in C_{2k+1}} x_{pj_0} \leq k w_{j0}
+\sum_{p \in C_{2k+1}} x_{pj_0} \leq k w_{j_0}
 \end{equation}
 
 \begin{proof}
-Por teoremas de coloreo (que se prueban en general por inducción), sabemos que el numero cromático $\chi(C) = 3$. En el peor de los casos, cada vértice del agujero estara en una partición diferente. Aqui nuevamente tenemos dos casos:
+Por teoremas de coloreo (que se prueban en general por inducción), sabemos que el número cromático $\chi(C) = 3$. En el peor de los casos, cada vértice del agujero estará en una partición diferente. Aquí nuevamente tenemos dos casos:
 
 \begin{itemize}
-\item Si no se asigna el color $j_0$ a algun vértice del agujero, la desigualdad vale.
-\item Si se asigna el color $j_0$, en el peor de los casos el mismo sera utilizado por a lo sumo $(|C|-1)/2$ vértices. Como $|C| = 2k+1$,  $(2k+1-1)/2 = k$. Por lo tanto vale la desigualdad.  \hfill $\square$
+\item Si no se asigna el color $j_0$ a algún vértice del agujero, la desigualdad vale.
+\item Si se asigna el color $j_0$, en el peor de los casos el coloreo particionado coincide con el coloreo tradicional. En ese caso, se asignará el color $j_0$ a lo sumo a $(|C|-1)/2$ vértices. Dado $|C| = 2k+1$,  $(2k+1-1)/2 = k$. Por lo tanto vale la desigualdad.  \hfill $\square$
 \end{itemize}
 
 \end{proof}
 
 \subsection{Planos de Corte}
 
-Luego de relajar el PLEM, los \textit{algoritmos de separación} buscan acotar el espacio de búsqueda para que se parezca mas a la cápsula convexa. Existen algoritmos de separación exactos y heurísticos. Los algoritmos heurísticos, luego de resolver la relajación del problema entero y encontrar una solución óptima $x^*$, retornan una o mas desigualdades de la clase violadas por alguna familia de desigualdades.
+La utilización de los algoritmos de planos de corte comenzó a estudiarse en los años 60. En términos básicos, en un primer paso se resuelve la relajación lineal del problema. Luego, se verifica si se obtiene una solución infactible o una solución entera. En caso de que no ocurra esto, los \textit{algoritmos de separación} buscan identificar desigualdades lineales que permitan separar el óptimo fraccionario hallado, e intentar que el poliedro se parezca más a la cápsula convexa. Existen algoritmos de separación exactos y heurísticos. Los algoritmos heurísticos, luego de resolver la relajación del problema entero y encontrar una solución óptima $x^*$, retornan una o más desigualdades de la clase violadas la solución $x^*$.
 
-Dado que es un algoritmo heurístico, es posible que exista una desigualdad de la clase violada aunque el procedimiento no sea capaz de encontrarla. Si se encuentra una desigualdad que es violada por la solución óptima de la relajación, se agrega esta nueva restricción y se vuelve a resolver el programa lineal. Este procedimiento se conoce como algoritmo de plano de corte. Si una solución óptima al problema existe, este tipo de algoritmo no necesariamente la encuentra. Por ejemplo, las heurísticas que encuentran desigualdades validas pueden fallar y el algoritmo no puede continuar.
+Dado que se trata de un algoritmo heurístico, es posible que exista una desigualdad de la clase violada aunque el procedimiento no sea capaz de encontrarla. Si se encuentra una desigualdad que es violada por la solución óptima de la relajación, se agrega esta nueva restricción y se vuelve a resolver el programa lineal. Este procedimiento se conoce como algoritmo de plano de corte. Si una solución óptima al problema existe, este tipo de algoritmo no necesariamente la encuentra. Por ejemplo, las heurísticas que encuentran desigualdades válidas pueden fallar, y el algoritmo no puede continuar.
 
 \subsection{Heurísticas}
 
-En general, construir las familias de desigualdades enunciadas en las secciones anteriores de forma exhaustiva es un problema NP-Hard. Por esta razón los algoritmos heurísticos son sumamente útiles para buscar una aproximación polinomial al problema. Las heurísticas que enunciaremos a continuación utilizan algunas propiedades de la representación de nuestro grafo, ya sea para su construcción o para lograr una mejor complejidad temporal y espacial.
+En general, construir las familias de desigualdades enunciadas en las secciones anteriores de forma exhaustiva es un problema NP-Hard. Por esta razón, los algoritmos heurísticos son sumamente útiles para buscar una aproximación polinomial al problema. Las heurísticas que enunciaremos a continuación utilizan algunas propiedades de la representación de nuestro grafo, ya sea para su construcción o para lograr una mejor complejidad temporal y espacial.
 
-En primer lugar, representamos la estructura del grafo mediante una matriz de adyacencias. Esta matriz se implemento utilizando una lista. Dado que la matriz de adyacencias es simétrica y la diagonal no es necesaria para este problema en particular, guardamos solo la parte triangular superior de la misma. Esto nos da la ventaja de poder saber si dos vértices son adyacentes o no en \order{1} y reduce la complejidad espacial de forma considerable. La formula que utilizamos para generar la biyeccion entre arista e índice en la lista se puede ver claramente en el código. La idea es bastante simple y se basa principalmente en usar la expresión para la suma de enteros consecutivos.
+En primer lugar, representamos la estructura del grafo mediante una matriz de adyacencias. Esta matriz se implemento utilizando una lista. Dado que la matriz de adyacencias es simétrica, y la diagonal no es necesaria para este problema en particular, guardamos sólo la parte triangular superior de la misma. Esto nos da la ventaja de poder saber si dos vértices son adyacentes o no en \order{1}, y asimismo reduce la complejidad espacial de forma considerable. La fórmula que utilizamos para generar la biyección entre arista e índice en la lista puede verse claramente en el código. La idea es bastante simple y se basa principalmente en usar la expresión para la suma de enteros consecutivos.
 
-En segundo lugar, numeramos todos los vértices con enteros comenzando con $id = 1$. Por construcción, luego nuestras heurísticas nos garantizaran que nuestro conjunto de índices que representa a un miembro de una familia esta ordenado. Esto es muy ventajoso en el sentido que podemos saber fácilmente si un nuevo potencial miembro de la familia esta contenido dentro de un miembro existente. Por otro lado, tiene una clara desventaja: la familia dependerá de como los vértices son numerados.
+En segundo lugar, numeramos todos los vértices con enteros comenzando con $id = 1$. Por construcción, luego nuestras heurísticas nos garantizarán que nuestro conjunto de índices que representa a un miembro de una familia está ordenado. Esto es muy ventajoso en el sentido que podemos saber fácilmente si un nuevo potencial miembro de la familia esta contenido dentro de un miembro existente. Por otro lado, tiene una clara desventaja: la familia dependerá de como los vértices son numerados.
 
 En un principio, la estrategia que seguimos fue generar las diferentes familias una vez, y luego verificar en cada iteración si la solución de la relajación violaba alguna desigualdad. Dado que esta estrategia en general no daba resultados muy satisfactorios, luego decidimos generar las familias en función del resultado de la relajación para cada iteración.
 
-Por otro lado, muchas veces nuestra heurística generaba familias de desigualdades violadas muy grandes, y agregar todas terminaba siendo contraproducente. Por lo tanto, decidimos buscar algún criterio para poder determinar cuales son las mejores desigualdades a agregar y luego definir un $threshold$ para decidir cuantas agregamos al LP. El criterio que utilizamos es el modulo de la diferencia entre los miembros de la desigualdad, aunque pueden existir otros en función también de la cantidad de variables en la desigualdad. Muchas veces las desigualdades mas violadas difieren solamente en pocas variables, por lo que esto también podría ser tenido en cuenta.
+Por otro lado, muchas veces nuestra heurística generaba familias de desigualdades violadas muy grandes, y agregar todas terminaba siendo contraproducente. Por lo tanto, decidimos buscar algún criterio para poder determinar cuáles son las mejores desigualdades a agregar, y luego definir un $threshold$ para decidir cuántas agregamos al LP. El criterio que utilizamos es el módulo de la diferencia entre los miembros de la desigualdad, aunque pueden existir otros en función también de la cantidad de variables en la desigualdad. Muchas veces las desigualdades más violadas difieren solamente en pocas variables, por lo que esto también podría ser tenido en cuenta.
 
 \pagebreak
 
 \subsubsection{Heurística de Separación para Clique Maximal}
 
-Para esta heurística, lo que hacemos es recorrer los vértices que tienen una solución positiva en la relajación del LP en orden. En primer lugar, tomamos el primer vértice, y luego comenzamos a recorrer la lista hasta que encontramos un vértice adyacente. Lo agregamos al conjunto que representa al miembro de la clique, y seguimos agregando elemento en orden de forma que cumplan que son adyacentes con todos los que ya hemos agregado. Una vez recorrida toda la lista, agregamos este conjunto a la familia. Luego comenzamos a generar una nueva familia a partir del segundo vértice, y así sucesivamente. Luego agregamos las mejores $threshold$ desigualdades por score. Este procedimiento se puede ilustrar con el siguiente pseudocódigo:
+Para esta heurística, lo que hacemos es recorrer en orden los vértices que tienen una solución positiva en la relajación del LP. En primer lugar, tomamos el primer vértice, y luego comenzamos a recorrer la lista hasta que encontramos un vértice adyacente. Lo agregamos al conjunto que representa al miembro de la clique, y seguimos agregando elementos en orden de forma que cumplan la adyacentes con todos los que ya hemos agregado. Una vez recorrida toda la lista, agregamos este conjunto a la familia. Luego comenzamos a generar una nueva familia a partir del segundo vértice, y así sucesivamente. Luego agregamos las mejores $threshold$ desigualdades por score. Este procedimiento se puede ilustrar con el siguiente pseudocódigo:
 
 \begin{algorithm}
 \caption{Algoritmo para agregar cliques violadas}
@@ -140,13 +156,13 @@ Para esta heurística, lo que hacemos es recorrer los vértices que tienen una s
 \end{algorithmic}
 \end{algorithm}
 
-Notar que en la practica solo consideramos cliques de tamaño mayor a 2, dado que si no se pisan con las restricciones de adyacencia del LP. A su vez, esta heurística debe ser generalizada para todos los colores, cosa que no mostramos dado que no aportaba nada al momento de mostrar la idea del algoritmo de forma clara.
+Notar que en la práctica sólo consideramos cliques de tamaño mayor a 2, dado que si no se pisan con las restricciones de adyacencia del LP. A su vez, esta heurística debe ser generalizada para todos los colores, lo que no fue mostrado para facilitar la visualización del algoritmo.
 
 \pagebreak
 
 \subsubsection{Heurística de Separación para Agujero Impar}
 
-Para esta heurística, seguimos un procedimiento similar al anterior. Recorremos los vértices en orden, y los vamos agregando si son adyacentes. Al final, el conjunto de vértices resultante es un camino. Luego, vemos si el ultimo elemento del camino es adyacente al primero y si el camino tiene longitud impar. Si esto sucede, agregamos el conjunto a la familia. Si no sucede, quitamos el ultimo elemento y verificamos nuevamente la condición hasta que se satisfaga. Finalmente, agregamos las mejores $threshold$ desigualdades por score. Este procedimiento se puede ilustrar con el siguiente pseudocódigo:
+Para esta heurística, seguimos un procedimiento similar al anterior. Recorremos los vértices en orden, y los vamos agregando si son adyacentes. Al final, el conjunto de vértices resultante es un camino. Luego, vemos si el ultimo elemento del camino es adyacente al primero, y si el camino tiene longitud impar. Si esto sucede, agregamos el conjunto a la familia. Si no sucede, quitamos el ultimo elemento y verificamos nuevamente la condición hasta que se satisfaga. Finalmente, agregamos las mejores $threshold$ desigualdades por score. Este procedimiento se puede ilustrar con el siguiente pseudocódigo:
 
 \begin{algorithm}
 \caption{Algoritmo para agregar agujeros impares violados}
