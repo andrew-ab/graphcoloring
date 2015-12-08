@@ -2,7 +2,7 @@
 
 Dado un grafo $G(V,E)$ con $n = |V|$ vértices y $m = |E|$ aristas,  un coloreo de G se define como una asignación de un color o etiqueta a cada $v \in V$ de forma tal que para todo  par de vértices adyacentes $(p,q) \in E$ poseen colores distintos. El clásico problema de \textit{coloreo de grafos} consiste en encontrar un coloreo del grafo que utilice la menor cantidad de colores posibles.
 
-En este trabajo resolveremos una variante de este problema, el \textit{coloreo particionado de grafos}. A partir de un conjunto de vértices $V$ que se encuentra particionado en $V_1,...,V_k$, el problema consiste en asignar un color $c \in C$ a solo un vértice de cada partición de forma tal que dos vértices adyacentes no reciban el mismo color y minimizando la cantidad de colores utilizados.
+En este trabajo resolveremos una variante de este problema, el \textit{coloreo particionado de grafos}. A partir de un conjunto de vértices $V$ que se encuentra particionado en $V_1,...,V_k$, el problema consiste en asignar un color $c \in C$ a sólo un vértice de cada partición de forma tal que dos vértices adyacentes no reciban el mismo color y minimizando la cantidad de colores utilizados.
 
 Este problema se puede modelar con Programación Lineal Entera. Para ello, definamos las siguientes variables:
 
@@ -41,7 +41,7 @@ Los vértices adyacentes no comparten color. Recordar que no necesariamente se l
 x_{ij} + x_{kj} \leq 1 \;\;\;\;\; \forall (i,k) \in E,\;\; \forall j \in C
 \end{equation}
 
-Solo se le asigna un color a un único vértice de cada partición $p \in P$. Esto implica que cada vértice tiene a lo sumo solo un color.
+Sólo se le asigna un color a un único vértice de cada partición $p \in P$. Esto implica que cada vértice tiene a lo sumo sólo un color.
 \begin{equation}
 \sum_{i \in V_p} \sum_{j \in C} x_{ij} = 1 \;\;\;\;\; \forall p \in P
 \end{equation}
@@ -63,8 +63,9 @@ w_j \in \{0,1\} \;\;\;\;\; \forall j \in C
 \subsection{Eliminación de simetrías}
 \label{simetria}
 
-Una de nuestras ideas para eliminar las simetrías fue usar la clásica condición de coloreo que dice que los colores se deben utilizar en orden. Aunque existen otras, notamos que esta condicion mejoro ampliamente la ejecución del LP. Formalmente, se puede expresar como:
+Una de nuestras ideas para eliminar simetría fue usar la clásica condición de coloreo que establece que los colores se deben utilizar en orden. Aunque existen otras, notamos que esta condición mejoró ampliamente la ejecución del LP. Formalmente, se puede expresar como:
 
 \begin{equation}
 w_j \geq w_{j+1} \;\;\;\;\; \forall \; 1 \leq j \leq |C|
 \end{equation}
+% no es menor estricto con el |C|??
