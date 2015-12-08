@@ -274,6 +274,29 @@ experiments = [
 			'xticks': ('30%', '50%', '70%', '90%'),
 			'filename': "../docs/img/{type}-compare_v{vertex_size}_p{partition_size}_i{iterations}_l{load_limit}_t{traversal_strategy}_b{branching_strategy}"
 		}
+	},
+	{
+		'enable': ENABLE,
+		'type': 9,
+		'description': 'Traversal & Variable Selection Strategy',
+		'graph_type': 1,
+		'graph_filename': 'graph',
+		'vertex_size': 0,
+		'vertex_sizes': [40,60],
+		'density': 0,
+		'density_range': [30, 50, 70],
+		'partition_size': 10,
+		'solver': BB,
+		'symmetry_breaker': ENABLE,
+		'iterations': 1,
+		'select_cuts': CUTS_CLIQUE_ONLY,
+		'load_limit': 30,
+		'custom_config': CPLEX_CUSTOM,
+		'traversal_strategy': CPX_NODESEL_BESTBOUND,
+		'branching_strategy': CPX_VARSEL_DEFAULT,
+		'settings': {
+			'filename': "../docs/img/{type}-tree_v{vertex_size}_p{partition_size}_i{iterations}_l{load_limit}"
+		}
 	}
 ]
 
@@ -521,8 +544,6 @@ def runExperiment3(experiment):
 
 		experiment['density'] = density
 
-		print experiment['settings']['filename'].format(**experiment)+".png"
-
 		if os.path.isfile(experiment['settings']['filename'].format(**experiment)+".png"):
 			print "Experiment already exists."
 			continue
@@ -605,8 +626,6 @@ def runExperiment4(experiment):
 	createGraph(time1, time2, [], [], experiment)
 
 def runExperiment5(experiment):
-
-	print experiment['settings']['filename'].format(**experiment)+".png"
 
 	if os.path.isfile(experiment['settings']['filename'].format(**experiment)+".png"):
 		print "Experiment already exists."
@@ -744,7 +763,6 @@ def runExperiment6(experiment):
 
 def runExperiment7(experiment):
 
-
 	if os.path.isfile(experiment['settings']['filename'].format(**experiment)+".png"):
 		print "Experiment already exists."
 		return
@@ -860,6 +878,98 @@ def runExperiment8(experiment):
 
 			createGraph(time1, time2, time3, [], experiment)
 
+def runExperiment9(experiment):
+
+	for solver in [BB, BC]:
+
+		if solver == BB:
+			solver_name = 'B&B'
+		else:
+			solver_name = 'C&B'
+
+		experiment['solver'] = solver
+
+		print solver_name
+
+		for vertex_size in experiment['vertex_sizes']:
+
+			time1 = []
+			time2 = []
+			time3 = []
+			time4 = []
+
+			nodes1 = []
+			nodes2 = []
+			nodes3 = []
+			nodes4 = []
+
+			print "Vertex size: %d" % vertex_size
+			experiment['vertex_size'] = vertex_size
+
+			for density in experiment['density_range']:	
+
+				print "Density %d" % density
+				experiment['density'] = density
+
+				generateGraph(experiment)
+
+				# change traversal strategy
+				experiment['traversal_strategy'] = CPX_NODESEL_DFS
+
+				print "Traversal: CPX_NODESEL_DFS, Selection: CPX_VARSEL_MAXINFEAS"
+				experiment['branching_strategy'] = CPX_VARSEL_MAXINFEAS
+				sol = solveLP(experiment)
+				time1.append(sol['total_time'])
+				nodes1.append(sol['nodes_traversed'])
+
+				print "Traversal: CPX_NODESEL_DFS, Selection: CPX_VARSEL_MININFEAS"
+				experiment['branching_strategy'] = CPX_VARSEL_MININFEAS
+				sol = solveLP(experiment)
+				time2.append(sol['total_time'])
+				nodes2.append(sol['nodes_traversed'])
+
+				# change traversal strategy
+				experiment['traversal_strategy'] = CPX_NODESEL_BESTBOUND
+
+				print "Traversal: CPX_NODESEL_BESTBOUND, Selection: CPX_VARSEL_MAXINFEAS"
+				experiment['branching_strategy'] = CPX_VARSEL_MAXINFEAS
+				sol = solveLP(experiment)
+				time3.append(sol['total_time'])
+				nodes3.append(sol['nodes_traversed'])
+
+				print "Traversal: CPX_NODESEL_BESTBOUND, Selection: CPX_VARSEL_MININFEAS"
+				experiment['branching_strategy'] = CPX_VARSEL_MININFEAS
+				sol = solveLP(experiment)
+				time4.append(sol['total_time'])
+				nodes4.append(sol['nodes_traversed'])
+
+			experiment['settings'] = {
+				'label1': solver_name+' (DFS + MAXINFEAS)',
+				'label2': solver_name+' (DFS + MININFEAS)',
+				'label3': solver_name+' (BESTBOUND + MAXINFEAS)',
+				'label4': solver_name+' (BESTBOUND + MININFEAS)',
+				'xlabel': 'Graph density',
+				'ylabel': 'Time (secs)',
+				'title' : 'Traversal & Variable Selection Strategy ({vertex_size} vertices, {partition_size} partitions)',
+				'xticks': ('30%', '50%', '70%', '90%'),
+				'filename': "../docs/img/{type}-tree_v{vertex_size}_p{partition_size}_i{iterations}_l{load_limit}_s{solver}"
+			}
+			createGraph(time1, time2, time3, time4, experiment)
+
+			experiment['settings'] = {
+				'label1': solver_name+' (DFS + MAXINFEAS)',
+				'label2': solver_name+' (DFS + MININFEAS)',
+				'label3': solver_name+' (BESTBOUND + MAXINFEAS)',
+				'label4': solver_name+' (BESTBOUND + MININFEAS)',
+				'xlabel': 'Graph density',
+				'ylabel': 'Nodes',
+				'title' : 'Traversal & Variable Selection Strategy ({vertex_size} vertices, {partition_size} partitions)',
+				'xticks': ('30%', '50%', '70%', '90%'),
+				'filename': "../docs/img/{type}-tree_v{vertex_size}_p{partition_size}_i{iterations}_l{load_limit}_s{solver}_nodes"
+			}
+			createGraph(nodes1, nodes2, nodes3, nodes4, experiment)
+
+
 if __name__ == "__main__":
 
 	for experiment in experiments:
@@ -893,3 +1003,6 @@ if __name__ == "__main__":
 
 		if experiment['type'] == 8:
 			runExperiment8(experiment)
+
+		if experiment['type'] == 9:
+			runExperiment9(experiment)

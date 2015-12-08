@@ -39,7 +39,7 @@ Lo primero que podemos observar que no siempre hay una estrategia ganadora. Clar
 
 \subsection{Efecto de aumentar el numero de particiones}
 
-A medida que aumentamos el numero de particiones, el problema comienza a ser mas difícil y a parecerse mas a uno de coloreo. Esto lo podemos ver en el siguiente gráfico. Para Cut \& Branch, solo utilizamos los mejores 40 cortes de clique con una iteración. A medida que el problema se hace mas difícil, podemos observar como la ganancia del corte es mayor.
+A medida que aumentamos el numero de particiones, el problema comienza a parecerse mas a uno de coloreo. Dado que las desigualdades que implementamos son clásicas de coloreo, es de esperar que la performance mejore a medida que aumenta el numero de particiones \cite{coloring}. Para Cut \& Branch, solo utilizamos los mejores 40 cortes de clique con una iteración. A medida que aumenta el numero de particiones, podemos observar como la ganancia del corte es mayor.
 
 \begin{figure}[h]
   \centering
@@ -134,3 +134,38 @@ Como podemos ver, aumentar el numero de iteraciones de planos de corte no necesa
 \end{figure}
 
 Dado que el CPLEX por default utiliza cortes de Gomory y preprocesamiento de variables, no nos sorprende que en general sea superior a nuestras otras estrategias para grafos densos. Una propuesta interesante podría ser repetir esta experimentación permitiendo los cortes y el preprocesamiento para todas nuestras estrategias. Otra observación, el gráfico superior derecho es el caso de coloreo de grafos, dado que cada vértice pertenece a una partición diferente. Aquí podemos ver que las desigualdades de clique son sumamente útiles. 
+
+\pagebreak
+
+\subsection{Estrategias de recorrido del árbol de enumeración
+y selección de variable de branching}
+
+Existen muchas estrategias de recorrido del árbol de enumeración. En este trabajo solo analizaremos DFS y BBS. DFS (Depth First Search) recorre el árbol de enumeración de B\&B primero en profundidad. Por otro lado, BBS (Best Bound Search) recorre el árbol de enumeración utilizando alguna estrategia para intentar buscar una buena cota lo mas rápido posible. En general se utilizan estrategias heurísticas. En el caso de CPLEX, dado un nodo padre se calcula la solución a la relajación de todos sus hijos y luego se continua recorriendo el nodo con el mayor resultado de la función objetivo. \footnote{http://www-01.ibm.com/support/knowledgecenter/SSSA5P\_12.6.1/ilog.odms.cplex.help/CPLEX/Parameters/topics/NodeSel.html}.
+
+Ambas estrategias son sumamente ventajosas ya que permiten obtener una cota superior a la solución final para utilizar de poda al hacer backtracking sobre el árbol de enumeración. Dado que no utilizamos heurísticas iniciales, esta estrategia parece razonable. 
+
+Por otro lado, las estrategias de selección de variable buscan encontrar cual es la mejor variable sobre la cual hacer branching. Hay muchas reglas, como por ejemplo \textit{max/min infeasibility}. Mientras que la regla de \textit{minimum infeasibility} busca hacer branching sobre mas cercana al entero, la regla de \textit{maximum infeasibility} busca hacer exactamente lo contrario \footnote{http://www-01.ibm.com/support/knowledgecenter/SS9UKU\_12.4.0/com.ibm.cplex.zos.help/Parameters/topics/VarSel.html}.
+
+En esta sección analizaremos 4 combinaciones de estrategias de recorrido del árbol de enumeración y selección de variable de branching para B\&B puro y C\&B con cortes de clique, 1 iteración y $threshold = 30$. Las combinaciones que analizaremos son: DFS + MAXINFEAS, DFS + MININFEAS, BESTBOUND + MAXINFEAS, BESTBOUND + MININFEAS.
+
+\begin{figure}[h]
+  \centering
+  \begin{minipage}[b]{0.49\textwidth}
+    \includegraphics[width=\textwidth]{img/9-tree_v60_p10_i1_l30_s1.png}
+  \end{minipage}
+  \hfill
+  \begin{minipage}[b]{0.49\textwidth}
+    \includegraphics[width=\textwidth]{img/9-tree_v60_p10_i1_l30_s1_nodes.png}
+  \end{minipage}
+  \begin{minipage}[b]{0.49\textwidth}
+    \includegraphics[width=\textwidth]{img/9-tree_v60_p10_i1_l30_s2.png}
+  \caption{Tiempo de ejecución dependiendo de la estrategias de recorrido y selección de variable.}
+  \end{minipage}
+  \hfill
+  \begin{minipage}[b]{0.49\textwidth}
+    \includegraphics[width=\textwidth]{img/9-tree_v60_p10_i1_l30_s2_nodes.png}
+  \caption{Nodos recorridos dependiendo de la estrategias de recorrido y selección de variable.}
+  \end{minipage}
+\end{figure}
+
+Como podemos observar, en general C\&B tiene tiempos de ejecución menores y a su vez recorre menos nodos. La mejor estrategia para este problema parece ser BESTBOUND + MAXINFEAS. CPLEX utiliza por default BESTBOUND, aunque utiliza una heurística para elegir la variable de branching. 
