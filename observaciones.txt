@@ -1,26 +1,40 @@
-- corregí algunas boludeces de tildes y redacción
+RESUELTOS
+
+- Boludeces de tildes y redacción.
+- caso base n = 3, a la derecha me queda 1/3+1/3+1/3=1, por qué 3/2? creo que se multiplica por 1/2. también creo que hay algunos copypastes, no se ven los 12, 23, 13.
+- pusiste "familly" con doble l por algo en particular? (heurísticas)
+- experimentación, 4.5: tiempos del B&B varían con threshold, si no usa cortes, debería ser constante... o hay variabilidad por algo? CPU.
+- el threshold sería la cantidad de restricciones que agregás como máximo? sí.
+
+OTROS
 
 - en la parte de romper simetría, no va menor estricto en el tamaño de C?
 
 - en la demo de clique maximal, j0 no sale de todos los colores? por qué 1..n, si n es la cantidad de vértices? eventualmente k es la cantidad de colores / particiones.
 entiendo que en la demo un n es el tamaño de la clique, y el otro la cantidad de colores, no veo por qué serían el mismo n.
 
-- caso base n = 3, a la derecha me queda 1/3+1/3+1/3=1, por qué 3/2? creo que se multiplica por 1/2. también creo que hay algunos copypastes, no se ven los 12, 23, 13.
-
-- pusiste "familly" con doble l por algo en particular? (heurísticas)
-
 - "cliques violadas"??
 
 - el epsilon se corta en el pseudocódigo
 
-- experimentación: cómo tenés 40 particiones en un grafo de 30 nodos??
+- experimentación, 4.2: los 2 gráficos aplican algoritmos distintos y nuestra conclusión los relaciona asumiendo que son los mismos.
+
+- experimentación, 4.3: hay 40 particiones en un grafo de 30 nodos.
 
 - qué algoritmo de B&C se usó para 4.3 y 4.4? no está explícito, las 2 familias de cortes?
 
-- en la parte que se habló de simetría, da para colocar al menos la expresión de alguna otra? o decir que se probó y se eligió sólo esa?
+- en la parte que se habló de simetría, da para colocar al menos la expresión de alguna otra? o decir que se probaron y se eligió sólo esa?
 
-- cuando ponés "solo 1 iteración con límite de 40 desigualdades". en cada nodo que caes hacés cortes?
+- No me cierra que B&C y C&B sean distintos. No entendí si lo decís en general (entiendo que al menos en internet no están distinguidos) o lo usaste en el TP para "aislarlo" y probar la efectividad de los cortes.
+Por lo que entendí: C&B, sólo cortes en la raíz; B&C, cortes... ?
 
-- el threshold sería la cantidad de restricciones que agregás como máximo?
+- Suponete que brancheas siempre en 2. Empezás en nodo 1 (raíz), resolvés relajación, pedís 40 cortes, resolvés relajación. Brancheas en nodos 21 y 22. Agarrás 21, relajación, 40 cortes, relajación, brancheás en 31 y 32. Eso hacés cuando decís ""solo 1 iteración con límite de 40 desigualdades"?? o sólo hacés cortes en el nodo raíz, o 1??
 
-- por qué en el primer gráfico de 4.5 los tiempos del branch and bound varían con el threshold?? si no usa cortes, debería ser constante... o hay variabilidad por algo?
+- experimentación, 4.6: por qué escogiste threshold 40 si se vio en el paso anterior que las cliques apestaban?
+
+- Creo que a la hora de hacer benchmark con las instancias DIMACS era más razonable establecer no # de particiones fijas sino particiones como % del número de nodos, de modo parecido a la densidad. Algo así habían tirado en clase, creo.
+
+- Dado las instancias DIMACS, podrían haber quedado particiones vacías, si fueron llenadas al azar? O fueron armados al azar grupos de 10 o 20 particiones?
+
+- Se podría poner una columna en las instancias DIMACS con la densidad del grafo? serviría para poder contrastar B&B con C&B.
+

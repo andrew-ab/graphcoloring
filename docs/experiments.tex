@@ -14,14 +14,13 @@ Al igual que el problema de coloreo de grafos, el problema del coloreo particion
 \caption{Tiempo de resolución del modelo incluyendo o no eliminación de simetría.}
 \end{figure}
 
-Esto nos brinda la noción sumamente relevante de la importancia y efectividad de romper simetría al realizar la formulación de un LP. Cabe mencionar que existen muchas otras estrategias o expresiones para disminuir aun más el grado de simetría de la formulación. La escogida bajo ninguna circunstancia debe ser considerada la mejor posible.
+Esto nos brinda la noción de la importancia y efectividad de romper simetría al realizar la formulación de un LP. Cabe mencionar que existen muchas otras estrategias o expresiones para disminuir aun más el grado de simetría de la formulación. La formulación escogida bajo ninguna circunstancia debe ser considerada la mejor posible.
 
 \pagebreak
 
 \subsection{Efectividad de las familias de desigualdades}
 
 La idea de este experimento es comparar las diferentes estrategias de planos de corte. Para ello, se eligió a 40 como la cantidad de cortes de cada tipo que se podían agregar, con una sola iteración:
-% en cada iteración se podían agregar hasta 40 cortes?
 
 \begin{figure}[h]
   \centering
@@ -78,7 +77,7 @@ A medida que aumentamos el número de particiones, el problema comienza a parece
 	\caption{Efecto de aumentar la densidad del grafo.}
 \end{figure}
 
-A medida que aumenta la densidad del grafo, el problema de coloreo se vuelve sin duda más difícil. En los casos donde el número de particiones es mayor en relación al numero de vértices, Branch \& Cut con 1 iteración y 40 desigualdades violadas parece funcionar mejor. Esto no sucede en grafos esparsos, donde Branch \& Bound puro tiene un menor tiempo de ejecución.
+A medida que aumenta la densidad del grafo, el problema de coloreo se vuelve sin duda más difícil. Por otro lado, en gráficos más densos y en los casos en que el número de particiones es mayor en relación al número de vértices, se puede apreciar una tendencia  a funcionar mejor del Branch \& Cut, con 1 iteración y 40 desigualdades violadas. Sin embargo, en grafos esparsos, podemos notar una mayor efectividad del Branch \& Bound puro, en cuanto a tiempos de ejecución.
 
 \pagebreak
 
@@ -99,7 +98,9 @@ Para todos nuestros experimentos en general utilizamos sólo 1 iteración con un
   \end{minipage}
 \end{figure}
 
-Como podemos observar, agregar más restricciones no es siempre ventajoso. En un principio, agregar restricciones parece mejorar la ejecución del C\&B, pero ya a partir de 40 el tiempo de ejecución empeora de forma abrupta para las cliques. Esto no sucede para las restricciones de agujero impar. Nuevamente, esto se puede deber a que nuestra heurística de clique no es lo suficientemente buena.
+Como podemos concluirse de los gráficos, agregar más restricciones no es siempre ventajoso. En un principio, agregar restricciones parece mejorar la ejecución del C\&B, pero ya a partir de las 40 el tiempo de ejecución empeora de forma abrupta para las cliques. Esto no sucede para las restricciones de agujero impar. Claro está, que este incremento en el tiempo puede estar relacionado con la heurística de clique utilizada, que puede no se lo suficientemente buena. El $threshold$ de 30 se considera empiricamente aceptable.
+
+Por otro lado, es visible en el primer gráfico una variabilidad del tiempo de ejecución del B\&B con respecto al $threshold$. Sabemos que no corresponde, y se atribuye a ruido del CPU.
 
 \subsection{Efecto de aumentar la cantidad de iteraciones de planos de corte}
 
@@ -109,7 +110,7 @@ Como podemos observar, agregar más restricciones no es siempre ventajoso. En un
 \caption{Tiempo de ejecución al aumentar la cantidad de iteraciones de planos de corte.}
 \end{figure}
 
-Como podemos ver, aumentar el numero de iteraciones de planos de corte no necesariamente mejora el tiempo de ejecución. En cada iteración lo que hacíamos era generar una familia en función de la solución de la relajación del problema, y luego agregar las \textit{mejores} restricciones. En relación a la sección anterior, esto también esta relacionado con el $threshold$ que elegimos para hacer la experimentación.
+Como podemos ver, aumentar el número de iteraciones de planos de corte no necesariamente mejora el tiempo de ejecución. En cada iteración, lo que hacíamos era generar una familia de desigualdades en función de la solución de la relajación del problema, y luego agregar las \textit{mejores} restricciones. En relación a la sección anterior, esto también esta relacionado con el $threshold$ que elegimos para hacer la experimentación.
 
 \pagebreak
 
@@ -134,20 +135,22 @@ Como podemos ver, aumentar el numero de iteraciones de planos de corte no necesa
 	\caption{Comparacion B\&B, C\&B, CPLEX default para diferentes grafos.}
 \end{figure}
 
-Dado que el CPLEX por default utiliza cortes de Gomory y preprocesamiento de variables, no nos sorprende que en general sea superior a nuestras otras estrategias para grafos densos. Una propuesta interesante podría ser repetir esta experimentación permitiendo los cortes y el preprocesamiento para todas nuestras estrategias. Otra observación, el gráfico superior derecho es el caso de coloreo de grafos, dado que cada vértice pertenece a una partición diferente. Aquí podemos ver que las desigualdades de clique son sumamente útiles. 
+Dado que el CPLEX por default utiliza cortes de Gomory y preprocesamiento de variables, no nos sorprende que en general sea superior a nuestras otras estrategias para grafos densos. Una propuesta interesante podría ser repetir esta experimentación permitiendo los cortes y el preprocesamiento para todas nuestras estrategias.
+
+Al mismo tiempo, es importante observar el gráfico superior derecho, que corresponde al coloreo de grafos tradicional (cada vértice pertenece a una partición diferente). En él podemos aprecial la suma utilidad de las desigualdades de clique en disminuir los tiempos de ejecución en el caso de grafos densos. 
 
 \pagebreak
 
 \subsection{Estrategias de recorrido del árbol de enumeración
 y selección de variable de branching}
 
-Existen muchas estrategias de recorrido del árbol de enumeración. En este trabajo solo analizaremos DFS y BBS. DFS (Depth First Search) recorre el árbol de enumeración de B\&B primero en profundidad. Por otro lado, BBS (Best Bound Search) recorre el árbol de enumeración utilizando alguna estrategia para intentar buscar una buena cota lo mas rápido posible. En general se utilizan estrategias heurísticas. En el caso de CPLEX, dado un nodo padre se calcula la solución a la relajación de todos sus hijos y luego se continua recorriendo el nodo con el mayor resultado de la función objetivo. \footnote{http://www-01.ibm.com/support/knowledgecenter/SSSA5P\_12.6.1/ilog.odms.cplex.help/CPLEX/Parameters/topics/NodeSel.html}.
+Existen muchas estrategias de recorrido del árbol de enumeración. En este trabajo analizaremos únicamente DFS y BBS. DFS (Depth First Search) recorre el árbol de enumeración de B\&B primero en profundidad. Por otro lado, BBS (Best Bound Search) recorre el árbol de enumeración utilizando alguna estrategia para intentar buscar una buena cota lo más rápido posible (y de este modo intenta realizar una buena poda). En general se utilizan estrategias heurísticas. En el caso de CPLEX, dado un nodo padre se calcula la solución a la relajación de todos sus hijos y luego se continua recorriendo el nodo con el mayor resultado de la función objetivo. \footnote{http://www-01.ibm.com/support/knowledgecenter/SSSA5P\_12.6.1/ilog.odms.cplex.help/CPLEX/Parameters/topics/NodeSel.html}.
 
-Ambas estrategias son sumamente ventajosas ya que permiten obtener una cota superior a la solución final para utilizar de poda al hacer backtracking sobre el árbol de enumeración. Dado que no utilizamos heurísticas iniciales, esta estrategia parece razonable. 
+Ambas estrategias son sumamente ventajosas, ya que permiten obtener una cota superior a la solución final para utilizar de poda al hacer backtracking sobre el árbol de enumeración. Dado que no utilizamos heurísticas iniciales, esta estrategia parece razonable. 
 
-Por otro lado, las estrategias de selección de variable buscan encontrar cual es la mejor variable sobre la cual hacer branching. Hay muchas reglas, como por ejemplo \textit{max/min infeasibility}. Mientras que la regla de \textit{minimum infeasibility} busca hacer branching sobre mas cercana al entero, la regla de \textit{maximum infeasibility} busca hacer exactamente lo contrario \footnote{http://www-01.ibm.com/support/knowledgecenter/SS9UKU\_12.4.0/com.ibm.cplex.zos.help/Parameters/topics/VarSel.html}.
+Por otro lado, las estrategias de selección de variable buscan encontrar cuál es la mejor variable sobre la que hacer branching. Hay muchas reglas, como por ejemplo \textit{max/min infeasibility}. Mientras que la regla de \textit{minimum infeasibility} hace branching sobre aquella variable más cercana al valor entero, la regla de \textit{maximum infeasibility} hace exactamente lo contrario \footnote{http://www-01.ibm.com/support/knowledgecenter/SS9UKU\_12.4.0/com.ibm.cplex.zos.help/Parameters/topics/VarSel.html}.
 
-En esta sección analizaremos 4 combinaciones de estrategias de recorrido del árbol de enumeración y selección de variable de branching para B\&B puro y C\&B con cortes de clique, 1 iteración y $threshold = 30$. Las combinaciones que analizaremos son: DFS + MAXINFEAS, DFS + MININFEAS, BESTBOUND + MAXINFEAS, BESTBOUND + MININFEAS.
+En esta sección analizaremos 4 combinaciones de estrategias de recorrido del árbol de enumeración y selección de variable de branching para B\&B puro y C\&B con cortes de clique, 1 iteración y $threshold$ 30. Las combinaciones que analizaremos son: DFS + MAXINFEAS, DFS + MININFEAS, BESTBOUND + MAXINFEAS, BESTBOUND + MININFEAS.
 
 \begin{figure}[h]
   \centering
@@ -169,17 +172,17 @@ En esta sección analizaremos 4 combinaciones de estrategias de recorrido del á
   \end{minipage}
 \end{figure}
 
-Como podemos observar, en general C\&B tiene tiempos de ejecución menores y a su vez recorre menos nodos. La mejor estrategia para este problema parece ser BESTBOUND + MAXINFEAS. CPLEX utiliza por default BESTBOUND, aunque utiliza una heurística para elegir la variable de branching. 
+Como podemos observar, en general C\&B tiene tiempos de ejecución menores, y a su vez recorre menos nodos. Al mismo tiempo, de las 4 combinaciones testeadas, la mejor estrategia para este problema parece ser BESTBOUND + MAXINFEAS. CPLEX utiliza por default BESTBOUND, aunque utiliza una heurística para elegir la variable de branching. 
 
 \subsection{Instancias DIMACS}
 
-Las instancias DIMACS son comúnmente utilizadas en la literatura como instancias de benchmarking. A continuación mostramos nuestros tiempos de ejecución con B\&B y B\&C utilizando 1 iteración y $threshold = 30$ con solo desigualdades de clique. A su vez, ambas utilizan el recorrido del árbol de enumeración dado por default en CPLEX.
+Las instancias DIMACS son comúnmente utilizadas en la literatura como instancias de benchmarking. A continuación mostramos nuestros tiempos de ejecución con B\&B y B\&C utilizando 1 iteración y $threshold$ 30, con sólo desigualdades de clique. A su vez, ambas utilizan el recorrido del árbol de enumeración dado por default en CPLEX.
 
-Cada tabla utiliza un numero de particiones diferente. Dado que las instancias DIMACS no tienen un numero de partición debido a que se utilizan normalmente para coloreo, asignamos uno nosotros y luego dividimos los vértices en orden en las diferentes particiones de forma uniforme.
+Cada tabla utiliza fue elaborada utilizando un número de particiones diferente. Dado que las instancias DIMACS no tienen asocidas un numero de partición (éstas se utilizan comúnmente para coloreo tradicional), asignamos uno nosotros, y luego dividimos los vértices en orden en las diferentes particiones de forma uniforme.
 
-Tomamos como tiempo de ejecución limite 10 minutos, y reportamos el numero de colores encontrado por B\&B hasta ese momento. En todos los casos, B\&B y B\&C coincidieron con el numero de colores utilizados, por lo que los reportamos solo en una columna.
+Tomamos como tiempo de ejecución limite 10 minutos, y reportamos el número de colores encontrado por B\&B hasta ese momento. En todos los casos, B\&B y B\&C coincidieron con el número de colores utilizados, por lo que los reportamos en una única columna.
 
-Aquí quizás seria interesante probar con otras configuraciones de C\&B para los problemas mas difíciles. Para esos problemas C\&B parece tener una mejor performance.
+En este punto, quizás sería interesante probar con otras configuraciones de C\&B para los problemas más difíciles. Para esos problemas, C\&B parece mostrar una mejor performance.
 
 \begin{table}[H]
 \centering
