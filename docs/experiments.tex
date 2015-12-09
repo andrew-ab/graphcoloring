@@ -177,7 +177,9 @@ Las instancias DIMACS son comúnmente utilizadas en la literatura como instancia
 
 Cada tabla utiliza un numero de particiones diferente. Dado que las instancias DIMACS no tienen un numero de partición debido a que se utilizan normalmente para coloreo, asignamos uno nosotros y luego dividimos los vértices en orden en las diferentes particiones de forma uniforme.
 
-Tomamos como tiempo de ejecucion limite 10 minutos, y reportamos el numero de colores encontrado por B\&B hasta ese momento. En todos los casos, B\&B y B\&C coincidieron con el numero de colores utilizados, por lo que los reportamos solo en una columna.
+Tomamos como tiempo de ejecución limite 10 minutos, y reportamos el numero de colores encontrado por B\&B hasta ese momento. En todos los casos, B\&B y B\&C coincidieron con el numero de colores utilizados, por lo que los reportamos solo en una columna.
+
+Aquí quizás seria interesante probar con otras configuraciones de C\&B para los problemas mas difíciles. Para esos problemas C\&B parece tener una mejor performance.
 
 \begin{table}[H]
 \centering
@@ -245,4 +247,69 @@ zeroin.i.3 & 206 & 3540 & 0.25 & 1.91 & 1 \\ \hline
 \end{tabular}
 \end{table}
 
+\begin{table}[H]
+\centering
+\caption{Benchmark con 20 particiones}
+\begin{tabular}{|l|r|r|r|r|r|}
+\hline
+Problema & \multicolumn{1}{l|}{n} & \multicolumn{1}{l|}{m} & \multicolumn{1}{l|}{Tiempo tomado por B\&B (secs)} & \multicolumn{1}{l|}{Tiempo tomado por B\&C (secs)} & \multicolumn{1}{l|}{Colores Utilizados} \\ \hline
+anna & 138 & 493 & 0.07 & 0.49 & 1 \\ \hline
+david & 87 & 406 & 0.04 & 0.42 & 1 \\ \hline
+fpsol2.i.1 & 496 & 11654 & 1.10 & 34.07 & 1 \\ \hline
+fpsol2.i.2 & 451 & 8691 & 0.75 & 17.08 & 1 \\ \hline
+fpsol2.i.3 & 425 & 8688 & 0.83 & 17.88 & 1 \\ \hline
+games120 & 120 & 638 & 1.85 & 2.00 & 1 \\ \hline
+homer & 561 & 1629 & 0.39 & 2.35 & 1 \\ \hline
+huck & 74 & 301 & 0.08 & 0.18 & 1 \\ \hline
+inithx.i.1 & 864 & 18707 & 1.95 & 36.07 & 1 \\ \hline
+inithx.i.2 & 645 & 13979 & 1.42 & 16.36 & 1 \\ \hline
+inithx.i.3 & 621 & 13969 & 1.38 & 17.08 & 1 \\ \hline
+jean & 80 & 254 & 0.04 & 0.22 & 1 \\ \hline
+le450\_15a & 450 & 8168 & 0.93 & 66.87 & 1 \\ \hline
+le450\_15b & 450 & 8169 & 0.87 & 58.17 & 1 \\ \hline
+le450\_15c & 450 & 16680 & 2.06 & 120.52 & 1 \\ \hline
+le450\_15d & 450 & 16750 & 4.21 & 197.03 & 1 \\ \hline
+le450\_25a & 450 & 8260 & 0.97 & 96.22 & 1 \\ \hline
+le450\_25b & 450 & 8263 & 1.14 & 52.73 & 1 \\ \hline
+le450\_25c & 450 & 17343 & 2.94 & 155.22 & 1 \\ \hline
+le450\_25d & 450 & 17425 & 2.49 & 122.38 & 1 \\ \hline
+le450\_5a & 450 & 5714 & 1.25 & 65.50 & 1 \\ \hline
+le450\_5b & 450 & 5734 & 0.68 & 59.74 & 1 \\ \hline
+le450\_5c & 450 & 9803 & 2.04 & 110.64 & 1 \\ \hline
+le450\_5d & 450 & 9757 & 1.31 & 103.62 & 1 \\ \hline
+miles1000 & 128 & 3216 & 10 min & 10 min & 3 \\ \hline
+miles1500 & 128 & 5198 & 10 min & 10 min & 6 \\ \hline
+miles250 & 128 & 387 & 0.06 & 0.60 & 1 \\ \hline
+miles500 & 128 & 1170 & 16.50 & 17.50 & 2 \\ \hline
+miles750 & 128 & 2113 & 142.62 & 29.64 & 2 \\ \hline
+mulsol.i.1 & 197 & 3925 & 0.67 & 11.13 & 1 \\ \hline
+mulsol.i.2 & 188 & 3885 & 0.65 & 10.69 & 1 \\ \hline
+mulsol.i.3 & 184 & 3916 & 0.79 & 15.27 & 1 \\ \hline
+mulsol.i.4 & 185 & 3946 & 0.77 & 16.79 & 1 \\ \hline
+mulsol.i.5 & 186 & 3973 & 0.71 & 25.82 & 1 \\ \hline
+myciel3 & 11 & 20 & 0.14 & 0.49 & 4 \\ \hline
+myciel4 & 23 & 71 & 0.44 & 0.54 & 3 \\ \hline
+myciel5 & 47 & 236 & 0.072 & 0.24 & 1 \\ \hline
+myciel6 & 95 & 755 & 0.15 & 1.21 & 1 \\ \hline
+myciel7 & 191 & 2360 & 0.39 & 11.53 & 1 \\ \hline
+queen10\_10 & 100 & 1470 & 11.04 & 23.04 & 2 \\ \hline
+queen11\_11 & 121 & 1980 & 19.26 & 56.27 & 2 \\ \hline
+queen12\_12 & 144 & 2596 & 27.91 & 32.60 & 2 \\ \hline
+queen13\_13 & 169 & 3328 & 51.07 & 19.02 & 2 \\ \hline
+queen14\_14 & 196 & 4186 & 10 min & 153.14 & 2 \\ \hline
+queen15\_15 & 225 & 5180 & 10 min & 39.00 & 2 \\ \hline
+queen16\_16 & 256 & 6320 & 10 min & 10 min & 2 \\ \hline
+queen5\_5 & 25 & 160 & 1.00 & 1.00 & 5 \\ \hline
+queen6\_6 & 36 & 290 & 2.80 & 4.29 & 4 \\ \hline
+queen7\_7 & 49 & 476 & 13.84 & 25.16 & 4 \\ \hline
+queen8\_12 & 96 & 1368 & 300.04 & 301.40 & 3 \\ \hline
+queen8\_8 & 64 & 728 & 23.12 & 42.98 & 3 \\ \hline
+queen9\_9 & 81 & 1056 & 10 min & 99.08 & 3 \\ \hline
+school1 & 385 & 19095 & 8.57 & 119.25 & 1 \\ \hline
+school1\_nsh & 352 & 14612 & 4.31 & 86.76  & 1 \\ \hline
+zeroin.i.1 & 211 & 4100 & 0.40 & 6.32 & 1 \\ \hline
+zeroin.i.2 & 211 & 3541 & 0.32 & 4.08 & 1 \\ \hline
+zeroin.i.3 & 206 & 3540 & 0.32 & 6.75 & 1 \\ \hline
+\end{tabular}
+\end{table}
 

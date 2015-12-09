@@ -100,7 +100,7 @@ if __name__ == "__main__":
 		'total_time': '',
 		'colors_used': '',
 		'nodes_traversed': 'f',
-		'partition_size': 10,
+		'partition_size': 20,
 		'graph_filename': 'h',
 		'solver': BB,
 		'symmetry_breaker': ENABLE,
