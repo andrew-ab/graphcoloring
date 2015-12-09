@@ -9,7 +9,7 @@ Sea $j_0 \in \{1,...,n\}$ y sea $K$ una clique maximal de $G$. La desigualdad cl
 \end{equation}
 
 \begin{proof}
-Para esta demostración utilizaremos las desigualdades Chvátal-Gomory sobre las restricciones del LP planteado en la sección \ref{restricciones} e inducción. A priori, el teorema es bastante intuitivo: si pinto algún vértice de una clique, no puedo pintar ninguno adyacente del mismo color sin importar la forma en la que particione los vértices del grafo. Sea $n$ el tamaño de la clique maximal.
+Para esta demostración utilizaremos las desigualdades Chvátal-Gomory sobre las restricciones del LP planteado en la sección \ref{restricciones}, e inducción. A priori, el teorema es bastante intuitivo: si pinto algún vértice de una clique, no puedo pintar ninguno adyacente del mismo color sin importar la forma en la que particione los vértices del grafo. Sea $n$ el tamaño de la clique maximal.
 
 \hfill
 
@@ -105,9 +105,11 @@ Por teoremas de coloreo (que se prueban en general por inducción), sabemos que 
 
 \subsection{Planos de Corte}
 
-La utilización de los algoritmos de planos de corte comenzó a estudiarse en los años 60. En términos básicos, en un primer paso se resuelve la relajación lineal del problema. Luego, se verifica si se obtiene una solución infactible o una solución entera. En caso de que no ocurra esto, los \textit{algoritmos de separación} buscan identificar desigualdades lineales que permitan separar el óptimo fraccionario hallado, e intentar que el poliedro se parezca más a la cápsula convexa. Existen algoritmos de separación exactos y heurísticos. Los algoritmos heurísticos, luego de resolver la relajación del problema entero y encontrar una solución óptima $x^*$, retornan una o más desigualdades de la clase violadas la solución $x^*$.
+Los algoritmos de planos de corte comenzaron a estudiarse en los años 60's. Fueron introducidos por Ralph E. Gomory, a quien luego se le sumó Václav Schvátal. En sus términos básicos, en un primer paso se resuelve la relajación lineal del problema, es decir aquella que relaja las condiciones de integralidad sobre las variables. Luego, el procedimiento termina si se verifica que el problema es infactible, o si se halla una solución que cumple las condicioens de integralidad. En caso de que no ocurra esto, los \textit{algoritmos de separación} buscan identificar desigualdades lineales que permitan separar el óptimo fraccionario hallado de los puntos enteros factibles. De este modo, se intenta que el poliedro se parezca más a la cápsula convexa. Se dice que la solución fraccionaria \textit{viola} la desigualdad hallada, y al buscarla se debe garantizar que no queden puntos enteros factibles fuera del nuevo poliedro. A continuación, se vuelve a resolver la relajación lineal, agregando en la formulación la desigualdad encontrada. Se repite el proceso hasta que se encuentre una solución que cumpla con la integralidad de las variables, el problema resulte infactible, o no se pueda obtener desigualdades válidas.
 
-Dado que se trata de un algoritmo heurístico, es posible que exista una desigualdad de la clase violada aunque el procedimiento no sea capaz de encontrarla. Si se encuentra una desigualdad que es violada por la solución óptima de la relajación, se agrega esta nueva restricción y se vuelve a resolver el programa lineal. Este procedimiento se conoce como algoritmo de plano de corte. Si una solución óptima al problema existe, este tipo de algoritmo no necesariamente la encuentra. Por ejemplo, las heurísticas que encuentran desigualdades válidas pueden fallar, y el algoritmo no puede continuar.
+Existen algoritmos de separación exactos y heurísticos. Los algoritmos heurísticos, luego de resolver la relajación del problema entero y encontrar una solución óptima $x^*$, retornan una o más desigualdades de la clase violadas la solución $x^*$.
+
+Debido a la naturaleza heurística del algoritmo, es posible que exista una desigualdad de la clase violada, aunque éste sea incapaz de encontrarla. Si se encuentra una desigualdad que es violada por la solución óptima de la relajación, se agrega esta nueva restricción y se vuelve a resolver el programa lineal. Este procedimiento se conoce como algoritmo de plano de corte. Si una solución óptima al problema existe, este tipo de algoritmo no necesariamente la encuentra. Por ejemplo, las heurísticas que encuentran desigualdades válidas pueden fallar, y el algoritmo no puede continuar.
 
 \subsection{Heurísticas}
 

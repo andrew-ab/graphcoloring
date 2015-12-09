@@ -1,26 +1,27 @@
 \section{Experimentación}
 
-Dada una cantidad de vértices, los grafos se generan con formato DIMACS \footnote{Para ver algunos ejemplos del formato: http://mat.gsia.cmu.edu/COLOR/instances.html}. El generador toma como parámetro la densidad del grafo. Dada una clique con esa cantidad de vértices, se elijen vértices al azar hasta que se llega a la densidad deseada. Debido a que estas instancias están diseñadas para coloreo de grafos, asignamos los vértices de forma uniforme en el total de particiones pasado por parámetro a nuestro programa de coloreo particionado.
+Dada la cantidad de vértices, los grafos se generan en el formato estándar DIMACS \footnote{Para ver algunos ejemplos del formato: http://mat.gsia.cmu.edu/COLOR/instances.html}. El generador toma como parámetro la densidad del grafo. Dada una clique con esa cantidad de vértices, se elijen vértices al azar hasta que se llega a la densidad deseada. Debido a que estas instancias están diseñadas para coloreo de grafos, asignamos los vértices de forma uniforme en el total de particiones pasado por parámetro a nuestro programa de coloreo particionado.
 
-Por cuestiones de tiempo, para cada una de las experimentaciones CPLEX se ejecuto sin limtar la cantidad de threads con un procesador Intel(R) Core(TM) i7-3610QM CPU @ 2.30GHz y 16GB de memoria RAM.
+Por cuestiones de tiempo, cada uno de los experimientos CPLEX fue ejecutado sin límite de cantidad de threads, con un procesador Intel(R) Core(TM) i7-3610QM CPU @ 2.30GHz y 16GB de memoria RAM.
 
 \subsection{Eliminación de simetría}
 
-Al igual que el problema de coloreo de grafos, el problema del coloreo particionado de grafos presenta una gran cantidad de soluciones simétricas. De no romper la simetría del problema, los algoritmos de búsqueda normalmente tendrían un espacio mucho mayor de búsqueda, lo que afecta el tiempo de ejecución de forma considerable a medida que crece el tamaño del problema. Para romper la simetría en nuestro problema, en la sección \ref{simetria} mostramos como utilizamos la clásica condicion de coloreo de que los colores se deben utilizar en orden. Esto se puede ver en el siguiente gráfico:
+Al igual que el problema de coloreo de grafos, el problema del coloreo particionado de grafos presenta una gran cantidad de soluciones simétricas. De no romper la simetría del problema, los algoritmos tendrían un espacio de búsqueda mucho mayor, moviéndose por soluciones que, siendo computacionalmente distintas, en la práctica se trata de la misma. Esto afecta el tiempo de ejecución de forma considerable a medida que crece el tamaño del problema. Para romper la simetría en nuestro problema, en la sección \ref{simetria} mostramos cómo utilizamos la clásica condicion de coloreo de que los colores se deben utilizar en orden. Este fenómeno se puede ver en el siguiente gráfico:
 
 \begin{figure}[h]
 \centering
 \includegraphics[scale=0.7]{img/2-symmetry_v25_p5_l40_t1_b0.png}
-\caption{Eliminación de simetría.}
+\caption{Tiempo de resolución del modelo incluyendo o no eliminación de simetría.}
 \end{figure}
 
-Esto nos da una noción sumamente relevante de la importancia y la efectividad de romper la simetría en los LP. Cabe mencionar que existen muchas otras estrategias para romper la simetría de los problemas, y esta no es necesariamente la mejor.
+Esto nos brinda la noción sumamente relevante de la importancia y efectividad de romper simetría al realizar la formulación de un LP. Cabe mencionar que existen muchas otras estrategias o expresiones para disminuir aun más el grado de simetría de la formulación. La escogida bajo ninguna circunstancia debe ser considerada la mejor posible.
 
 \pagebreak
 
 \subsection{Efectividad de las familias de desigualdades}
 
-La idea de este experimento fue comparar las diferentes estrategias de planos de corte. Para ello se tomo a 40 como el a la cantidad de cortes de cada tipo que se podían agregar, con una sola iteración:
+La idea de este experimento es comparar las diferentes estrategias de planos de corte. Para ello, se eligió a 40 como la cantidad de cortes de cada tipo que se podían agregar, con una sola iteración:
+% en cada iteración se podían agregar hasta 40 cortes?
 
 \begin{figure}[h]
   \centering
@@ -35,11 +36,11 @@ La idea de este experimento fue comparar las diferentes estrategias de planos de
   \end{minipage}
 \end{figure}
 
-Lo primero que podemos observar que no siempre hay una estrategia ganadora. Claramente la estrategia a seguir depende de la densidad del grafo. Cuanto mas denso, mas cliques nuestra heurística podría encontrar y a priori uno esperaría que los tiempos mejoren. Esto no sucede, y de hecho agregar las restriciones de clique empeora el tiempo de ejecución con respecto al resultado de B\&B. También podemos observar que mejor tiempo de ejecución no necesariamente implica que se recorren menos nodos del árbol de enumeración. En contra de lo que esperábamos, las desigualdades de agujero impar parecen funcionar bien, aunque por supuesto se debe llevar a cabo una experimentación mas exhaustiva.
+Lo primero que podemos observar es que no siempre hay una estrategia ganadora por sobre las otras. Se observa con claridad una dependencia entre la densidad del grafo y la estrategia que tuvo mejores resultados. Cuanto más denso, más cliques nuestra heurística debería encontrar, y a priori uno esperaría que los tiempos mejoren. Esto no sucede, de hecho agregar las restriciones de clique empeora el tiempo de ejecución con respecto al resultado de utilizar B\&B. También podemos observar que un mejor tiempo de ejecución no necesariamente implica que se recorren menos nodos en árbol de enumeración. En contra de lo que esperábamos inicialmente, las desigualdades de agujero impar parecen funcionar bien, aunque por supuesto esto se podría constatar con mayor peso de llevar a cabo una experimentación mas exhaustiva.
 
-\subsection{Efecto de aumentar el numero de particiones}
+\subsection{Efecto de aumentar el número de particiones}
 
-A medida que aumentamos el numero de particiones, el problema comienza a parecerse mas a uno de coloreo. Dado que las desigualdades que implementamos son clásicas de coloreo, es de esperar que la performance mejore a medida que aumenta el numero de particiones \cite{coloring}. Para Cut \& Branch, solo utilizamos los mejores 40 cortes de clique con una iteración. A medida que aumenta el numero de particiones, podemos observar como la ganancia del corte es mayor.
+A medida que aumentamos el número de particiones, el problema comienza a parecerse más a uno de coloreo. Dado que las desigualdades que implementamos son clásicas de coloreo, es de esperar que la performance mejore a medida que aumenta el número de particiones \cite{coloring}. Para Cut \& Branch, sólo utilizamos los mejores 40 cortes de clique con una iteración. A medida que aumenta el número de particiones, podemos observar cómo la ganancia del corte es mayor.
 
 \begin{figure}[h]
   \centering
@@ -77,28 +78,28 @@ A medida que aumentamos el numero de particiones, el problema comienza a parecer
 	\caption{Efecto de aumentar la densidad del grafo.}
 \end{figure}
 
-A medida que aumenta la densidad del grafo, la dificultad del problema es claramente mayor. En los casos donde el numero de particiones es mayor en relación al numero de vértices, Branch \& Cut con 1 iteración y 40 desigualdades violadas parece funcionar mejor. Esto no sucede en grafos esparsos, donde Branch \& Bound puro tiene un menor tiempo de ejecución.
+A medida que aumenta la densidad del grafo, el problema de coloreo se vuelve sin duda más difícil. En los casos donde el número de particiones es mayor en relación al numero de vértices, Branch \& Cut con 1 iteración y 40 desigualdades violadas parece funcionar mejor. Esto no sucede en grafos esparsos, donde Branch \& Bound puro tiene un menor tiempo de ejecución.
 
 \pagebreak
 
 \subsection{Efecto de aumentar la cantidad de restricciones incorporadas por iteración}
 
-Para todos nuestros experimentos en general utilizamos solo 1 iteración con un limite de 40 desigualdades por familia. La idea de este experimento fue evaluar esta configuración. Para ello utilizamos un grafo con 40 vértices y 20 particiones.
+Para todos nuestros experimentos en general utilizamos sólo 1 iteración con un límite de 40 desigualdades por familia. La idea de este experimento es evaluar esta configuración. Para ello, utilizamos un grafo con 40 vértices y 20 particiones.
 
 \begin{figure}[h]
   \centering
   \begin{minipage}[b]{0.49\textwidth}
     \includegraphics[width=\textwidth]{img/6-thresholds_v40_p20_i1_t1_b0.png}
-    \caption{Tiempo de ejecución al incrementar el numero de restricciones incorporadas.}
+    \caption{Tiempo de ejecución al incrementar el número de restricciones incorporadas.}
   \end{minipage}
   \hfill
   \begin{minipage}[b]{0.49\textwidth}
     \includegraphics[width=\textwidth]{img/6-thresholds_v40_p20_i1_co2_t1_b0_nodes.png}
-    \caption{Nodos recorridos al incrementar el numero de restricciones incorporadas.}
+    \caption{Nodos recorridos al incrementar el número de restricciones incorporadas.}
   \end{minipage}
 \end{figure}
 
-Como podemos observar, agregar mas restricciones no es siempre ventajoso. En un principio, agregar restricciones parece mejorar la ejecución del C\&B, pero ya a partir de 40 el tiempo de ejecución empeora de forma abrupta para las cliques. Esto no sucede para las restricciones de agujero impar. Nuevamente, esto se puede deber a que nuestra heurística de clique no es lo suficientemente buena.
+Como podemos observar, agregar más restricciones no es siempre ventajoso. En un principio, agregar restricciones parece mejorar la ejecución del C\&B, pero ya a partir de 40 el tiempo de ejecución empeora de forma abrupta para las cliques. Esto no sucede para las restricciones de agujero impar. Nuevamente, esto se puede deber a que nuestra heurística de clique no es lo suficientemente buena.
 
 \subsection{Efecto de aumentar la cantidad de iteraciones de planos de corte}
 
