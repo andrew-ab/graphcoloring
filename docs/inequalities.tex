@@ -25,24 +25,14 @@ Para esta demostración utilizaremos las desigualdades Chvátal-Gomory sobre las
 \item $x_{1j_0} + x_{3j_0} \leq 1$
 \end{itemize}
 
-\textcolor{red}{Duda:
 Multiplicando todas estas desigualdades por $1/2$ y sumando entonces:
-$1/2 (x_{1j_0} + x_{2j_0})  + 1/2 (x_{2j_0} + x_{3j_0}) + 1/2 (x_{2j_0} + x_{3j_0}) \leq 3/2$
+
+$1/2 (x_{1j_0} + x_{2j_0})  + 1/2 (x_{2j_0} + x_{3j_0}) + 1/2 (x_{1j_0} + x_{3j_0}) \leq 3/2$
+
 Desarrollando: $x_{1j_0} + x_{2j_0} +  x_{3j_0} \leq 3/2$.
+
 Como $x_{ij}$ toma valores enteros, se implica:
 $x_{1j_0} + x_{2j_0} +  x_{3j_0} \leq 1$
-Utilizando la definición de $w_j$ entonces: $x_{1j_0} + x_{2j_0} +  x_{3j_0} \leq w_{j_0}$
-Por lo tanto la desigualdad vale para $n=3$.
-}
-
-Multiplicando todas estas desigualdades por $1/3$ y sumando entonces:
-
-$1/3 (x_{1j_0} + x_{2j_0})  + 1/3 (x_{2j_0} + x_{3j_0}) + 1/3 (x_{2j_0} + x_{3j_0}) \leq 3/2$
-
-Como $x_{ij}$ toma valores enteros, entonces:
-$1/3 (x_{1j_0} + x_{2j_0})  + 1/3 (x_{2j_0} + x_{3j_0}) + 1/3 (x_{2j_0} + x_{3j_0}) \leq 1$
-
-Simplificando: $x_{1j_0} + x_{2j_0} +  x_{3j_0} \leq 1$.
 
 Utilizando la definición de $w_j$ entonces: $x_{1j_0} + x_{2j_0} +  x_{3j_0} \leq w_{j_0}$
 
@@ -60,12 +50,6 @@ Como vale la hipótesis inductiva, sabemos que:
 \sum_{p \in K-n} x_{pj_0} \leq w_{j_0}
 \end{equation*}
 
-\textcolor{red}{
-\begin{equation*}
-\sum_{p \in K-(n-1)} x_{pj_0} \leq w_{j_0}
-\end{equation*}
-}
-
 Al agregar un vértice a la clique, agregamos $n-1$ aristas, por lo que deben cumplir:
 
 $x_{1j_0} + x_{nj_0} \leq 1$, $x_{2j_0} + x_{nj_0} \leq 1$,...,
@@ -74,7 +58,7 @@ $x_{(n-1)j_0} + x_{nj_0} \leq 1$
 Utilizando esto, podemos ver que:
 
 \begin{equation*}
-x_{nj_0} + \sum_{p \in K-(n-1)} x_{pj_0} \leq w_{j_0}
+x_{nj_0} + \sum_{p \in K-n} x_{pj_0} \leq w_{j_0}
 \end{equation*}
 
 Esto es claramente equivalente a lo que queremos demostrar y se puede justificar a partir de dos casos:
@@ -130,8 +114,8 @@ Para esta heurística, lo que hacemos es recorrer en orden los vértices que tie
 \begin{algorithm}
 \caption{Algoritmo para agregar cliques violadas}
 \begin{algorithmic}[1]
-\Procedure{generateCliqueFamilly}{$V,E,sol,threshold,lp$}
-\State $set<score, set<int>> clique\_familly$
+\Procedure{generateCliqueFamily}{$V,E,sol,threshold,lp$}
+\State $set<score, set<int>> clique\_family$
 \For {$id \leftarrow 1, |V|$}
 	\If {$sol[id] > 0 + \epsilon$}
 		\State continue
@@ -146,12 +130,12 @@ Para esta heurística, lo que hacemos es recorrer en orden los vértices que tie
 			\State clique.insert(id2)
 		\EndIf
 	\EndFor
-	\If {$\neg clique\_familly.isContained(clique)$}
-		\State clique\_familly.insert($<getScore(clique), clique>$)
+	\If {$\neg clique\_family.isContained(clique)$}
+		\State clique\_family.insert($<getScore(clique), clique>$)
 	\EndIf
 \EndFor
-\State sortByScore(clique\_familly)
-\State addTopCliqueRestrictions(lp, clique\_familly, threshold)
+\State sortByScore(clique\_family)
+\State addTopCliqueRestrictions(lp, clique\_family, threshold)
 \EndProcedure
 \end{algorithmic}
 \end{algorithm}
@@ -167,8 +151,8 @@ Para esta heurística, seguimos un procedimiento similar al anterior. Recorremos
 \begin{algorithm}
 \caption{Algoritmo para agregar agujeros impares violados}
 \begin{algorithmic}[1]
-\Procedure{generateOddholeFamilly}{$V,E,sol,threshold, lp$}
-\State $set<score, set<int>> oddhole\_familly$
+\Procedure{generateOddholeFamily}{$V,E,sol,threshold, lp$}
+\State $set<score, set<int>> oddhole\_family$
 \For {$id \leftarrow 1, |V|$}
 	\If {$sol[id] > 0 + \epsilon$}
 		\State continue
@@ -187,11 +171,11 @@ Para esta heurística, seguimos un procedimiento similar al anterior. Recorremos
 		\State path.erase(path.end)
 	\EndWhile
 	\If {path.size() $\geq$ 3 \textbf{and} isAdyacent(path.start, path.end)}
-		\State oddhole\_familly.insert($<getScore(path), path>$)
+		\State oddhole\_family.insert($<getScore(path), path>$)
 	\EndIf
 \EndFor
-\State sortByScore(oddhole\_familly)
-\State addTopPathRestrictions(lp, oddhole\_familly, threshold)
+\State sortByScore(oddhole\_family)
+\State addTopPathRestrictions(lp, oddhole\_family, threshold)
 
 \EndProcedure
 \end{algorithmic}
