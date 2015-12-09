@@ -13,4 +13,14 @@ entiendo que en la demo un n es el tamaño de la clique, y el otro la cantidad d
 
 - el epsilon se corta en el pseudocódigo
 
-- 
+- experimentación: cómo tenés 40 particiones en un grafo de 30 nodos??
+
+- qué algoritmo de B&C se usó para 4.3 y 4.4? no está explícito, las 2 familias de cortes?
+
+- en la parte que se habló de simetría, da para colocar al menos la expresión de alguna otra? o decir que se probó y se eligió sólo esa?
+
+- cuando ponés "solo 1 iteración con límite de 40 desigualdades". en cada nodo que caes hacés cortes?
+
+- el threshold sería la cantidad de restricciones que agregás como máximo?
+
+- por qué en el primer gráfico de 4.5 los tiempos del branch and bound varían con el threshold?? si no usa cortes, debería ser constante... o hay variabilidad por algo?
