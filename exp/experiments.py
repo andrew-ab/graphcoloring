@@ -36,7 +36,7 @@ CPLEX_CUSTOM  = 1
 
 experiments = [
 	{
-		'enable': ENABLE,
+		'enable': DISABLE,
 		'type': 1,
 		'description': 'Different combinations of amount of vertices, partitions and densities.',
 		'graph_type': 1,
@@ -57,16 +57,16 @@ experiments = [
 		'branching_strategy': CPX_VARSEL_DEFAULT,	
 		'settings': {
 			'label1': 'Branch & Bound',
-			'label2': 'Branch & Cut',
+			'label2': 'Cut & Branch',
 			'xlabel': 'Graph density',
 			'ylabel': 'Time (secs)',
-			'title' : 'Branch & Bound vs. Branch & Cut Time ({vertex_size} vertices, {partition_size} partitions)',
+			'title' : 'Branch & Bound vs. Cut & Branch Time ({vertex_size} vertices, {partition_size} partitions)',
 			'xticks': ('30%', '50%', '70%', '90%'),
 			'filename': "../docs/img/{type}-bb_vs_bc_v{vertex_size}_p{partition_size}_i{iterations}_co{select_cuts}_l{load_limit}_t{traversal_strategy}_b{branching_strategy}"
 		}
 	},
 	{
-		'enable': ENABLE,
+		'enable': DISABLE,
 		'type': 2,
 		'description': 'Effect of breaking the symmetry.',
 		'graph_type': 1,
@@ -116,16 +116,16 @@ experiments = [
 		'branching_strategy': CPX_VARSEL_DEFAULT,	
 		'settings': {
 			'label1': 'Branch & Bound',
-			'label2': 'Branch & Cut',
+			'label2': 'Cut & Branch',
 			'xlabel': 'Partitions',
 			'ylabel': 'Time (secs)',
 			'title' : 'Effect of number of partitions on runtime ({vertex_size} vertices, {density} density)',
-			'xticks': range(20, 50, 5),
+			'xticks': range(10, 35, 5),
 			'filename': "../docs/img/{type}-partitions_v{vertex_size}_d{density}_i{iterations}_co{select_cuts}_l{load_limit}_t{traversal_strategy}_b{branching_strategy}"
 		}
 	},
 	{
-		'enable': ENABLE,
+		'enable': DISABLE,
 		'type': 4,
 		'description': 'Effect of increasing the number of vertices.',
 		'graph_type': 1,
@@ -144,7 +144,7 @@ experiments = [
 		'branching_strategy': CPX_VARSEL_DEFAULT,	
 		'settings': {
 			'label1': 'Branch & Bound',
-			'label2': 'Branch & Cut',
+			'label2': 'Cut & Branch',
 			'xlabel': 'Nodes',
 			'ylabel': 'Time (secs)',
 			'title' : 'Effect of increasing the number of vertices ({density}% density, {partition_size} partitions)',
@@ -153,7 +153,7 @@ experiments = [
 		}
 	},
 	{
-		'enable': ENABLE,
+		'enable': DISABLE,
 		'type': 5,
 		'description': 'Cutting Plane Strategies.',
 		'graph_type': 1,
@@ -183,7 +183,7 @@ experiments = [
 		}
 	},
 	{
-		'enable': ENABLE,
+		'enable': DISABLE,
 		'type': 6,
 		'description': 'Cutting Plane Thresholds.',
 		'graph_type': 1,
@@ -214,7 +214,7 @@ experiments = [
 		}
 	},
 	{
-		'enable': ENABLE,
+		'enable': DISABLE,
 		'type': 7,
 		'description': 'Cutting Plane Iterations.',
 		'graph_type': 1,
@@ -245,7 +245,7 @@ experiments = [
 		}
 	},
 	{
-		'enable': ENABLE,
+		'enable': DISABLE,
 		'type': 8,
 		'description': 'B&B vs C&B vs Default CPLEX.',
 		'graph_type': 1,
@@ -276,7 +276,7 @@ experiments = [
 		}
 	},
 	{
-		'enable': ENABLE,
+		'enable': DISABLE,
 		'type': 9,
 		'description': 'Traversal & Variable Selection Strategy',
 		'graph_type': 1,
@@ -345,7 +345,7 @@ def solveLP(experiment):
 	if experiment['solver'] == 1:
 		print "Result of Branch & Bound"
 	else:
-		print "Result of Branch & Cut"
+		print "Result of Cut & Branch"
 		print "Time taken by CP: %f" % time_taken_cp
 		print "Time taken by LP: %f" % time_taken_lp
 
@@ -473,10 +473,10 @@ def runExperiment1(experiment):
 
 			experiment['settings'] = {
 				'label1': 'Branch & Bound',
-				'label2': 'Branch & Cut',
+				'label2': 'Cut & Branch',
 				'xlabel': 'Graph density',
 				'ylabel': 'Nodes',
-				'title' : 'Branch & Bound vs. Branch & Cut Nodes ({vertex_size} vertices, {partition_size} partitions)',
+				'title' : 'Branch & Bound vs. Cut & Branch Nodes ({vertex_size} vertices, {partition_size} partitions)',
 				'xticks': ('30%', '50%', '70%', '90%'),
 				'filename': "../docs/img/{type}-bb_vs_bc_v{vertex_size}_p{partition_size}_i{iterations}_co{select_cuts}_l{load_limit}_t{traversal_strategy}_b{branching_strategy}_nodes"
 			}
@@ -485,10 +485,10 @@ def runExperiment1(experiment):
 
 			experiment['settings'] = {
 				'label1': 'Branch & Bound',
-				'label2': 'Branch & Cut',
+				'label2': 'Cut & Branch',
 				'xlabel': 'Graph density',
 				'ylabel': 'Time (secs)',
-				'title' : 'Branch & Bound vs. Branch & Cut Time ({vertex_size} vertices, {partition_size} partitions)',
+				'title' : 'Branch & Bound vs. Cut & Branch Time ({vertex_size} vertices, {partition_size} partitions)',
 				'xticks': ('30%', '50%', '70%', '90%'),
 				'filename': "../docs/img/{type}-bb_vs_bc_v{vertex_size}_p{partition_size}_i{iterations}_co{select_cuts}_l{load_limit}_t{traversal_strategy}_b{branching_strategy}"
 			}
@@ -577,11 +577,11 @@ def runExperiment3(experiment):
 
 		experiment['settings'] = {
 			'label1': 'Branch & Bound',
-			'label2': 'Branch & Cut',
+			'label2': 'Cut & Branch',
 			'xlabel': 'Partitions',
 			'ylabel': 'Nodes',
 			'title' : 'Effect of number of partitions on nodes traversed ({vertex_size} vertices, {density} density)',
-			'xticks': range(20, 50, 5),
+			'xticks': range(10, 35, 5),
 			'filename': "../docs/img/{type}-partitions_v{vertex_size}_d{density}_i{iterations}_co{select_cuts}_l{load_limit}_t{traversal_strategy}_b{branching_strategy}_nodes"
 		}
 
@@ -589,11 +589,11 @@ def runExperiment3(experiment):
 
 		experiment['settings'] = {
 			'label1': 'Branch & Bound',
-			'label2': 'Branch & Cut',
+			'label2': 'Cut & Branch',
 			'xlabel': 'Partitions',
 			'ylabel': 'Time (secs)',
 			'title' : 'Effect of number of partitions on runtime ({vertex_size} vertices, {density} density)',
-			'xticks': range(20, 50, 5),
+			'xticks': range(10, 35, 5),
 			'filename': "../docs/img/{type}-partitions_v{vertex_size}_d{density}_i{iterations}_co{select_cuts}_l{load_limit}_t{traversal_strategy}_b{branching_strategy}"
 		}
 
@@ -688,7 +688,7 @@ def runExperiment5(experiment):
 		'ylabel': 'Nodes',
 		'title' : 'Cutting Plane Strategies ({vertex_size} vertices, {partition_size} partitions)',
 		'xticks': ('10%', '30%', '50%', '70%'),
-		'filename': "../docs/img/{type}-cuts_v{vertex_size}_p{partition_size}_i{iterations}_co{select_cuts}_l{load_limit}_t{traversal_strategy}_b{branching_strategy}_nodes"
+		'filename': "../docs/img/{type}-cuts_v{vertex_size}_p{partition_size}_i{iterations}_l{load_limit}_t{traversal_strategy}_b{branching_strategy}_nodes"
 	}
 
 	createGraph(nodes1, nodes2, nodes3, nodes4, experiment)

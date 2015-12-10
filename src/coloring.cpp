@@ -13,38 +13,6 @@
 
 ILOSTLBEGIN // macro to define namespace
 
-// helper functions
-int getVertexIndex(int id, int color, int partition_size);
-inline int fromMatrixToVector(int from, int to, int vertex_size);
-inline bool isAdyacent(int from, int to, int vertex_size, bool* adjacencyList);
-bool adyacentToAll(int id, int vertex_size, bool* adjacencyList, const set<int>& clique);
-bool cliqueNotContained(const set<int>& clique, int color, const vector<tuple<double, int, set<int> > >& clique_familly);
-
-// load LP
-int loadObjectiveFunction(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int partition_size, char vtype);
-int loadAdyacencyColorRestriction(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int edge_size, int partition_size, bool* adjacencyList);
-int loadSingleColorInPartitionRestriction(CPXENVptr& env, CPXLPptr& lp, vector<vector<int> >& partitions, int partition_size);
-int loadAdyacencyColorRestriction(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int partition_size);
-int loadSymmetryBreaker(CPXENVptr& env, CPXLPptr& lp, int partition_size);
-
-// cutting planes
-int loadCuttingPlanes(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int edge_size, int partition_size, bool* adjacencyList, int iterations, int load_limit, int select_cuts);
-int maximalCliqueFamillyHeuristic(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int edge_size, int partition_size, bool* adjacencyList, double* sol, int load_limit);
-int loadUnsatisfiedCliqueRestriction(CPXENVptr& env, CPXLPptr& lp, int partition_size, const set<int>& clique, int color);
-
-int oddholeFamillyHeuristic(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int edge_size, int partition_size, bool* adjacencyList, double* sol, int load_limit);
-int loadUnsatisfiedOddholeRestriction(CPXENVptr& env, CPXLPptr& lp, int partition_size, const set<int>& path, int color);
-
-// cplex functions
-int solveLP(CPXENVptr& env, CPXLPptr& lp, int edge_size, int vertex_size, int partition_size);
-int convertVariableType(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int partition_size, char vtype);
-int setCPLEXConfig(CPXENVptr& env);
-int setTraversalStrategy(CPXENVptr& env, int strategy);
-int setBranchingVariableStrategy(CPXENVptr& env, int strategy);
-int setBranchAndBoundConfig(CPXENVptr& env);
-
-int checkStatus(CPXENVptr& env, int status);
-
 // colors array!
 const char* colors[] = {"Blue", "Red", "Green", "Yellow", "Grey", "Green", "Pink", "AliceBlue","AntiqueWhite","Aqua","Aquamarine","Azure","Beige",
 "Bisque","Black","BlanchedAlmond","BlueViolet","Brown","BurlyWood","CadetBlue","Chartreuse","Chocolate","Coral","CornflowerBlue",
@@ -61,140 +29,6 @@ const char* colors[] = {"Blue", "Red", "Green", "Yellow", "Grey", "Green", "Pink
 "Purple","RosyBrown","RoyalBlue","SaddleBrown","Salmon","SandyBrown","SeaGreen","SeaShell","Sienna","Silver","SkyBlue",
 "SlateBlue","SlateGray","SlateGrey","Snow","SpringGreen","SteelBlue","Tan","Teal","Thistle","Tomato","Turquoise","Violet",
 "Wheat","White","WhiteSmoke","YellowGreen"};
-
-int main(int argc, char **argv) {
-
-	if (argc != 11) {
-		printf("Usage: %s inputFile solver partitions symmetry_breaker iterations select_cuts load_limit custom_config traversal_strategy branching_strategy\n", argv[0]);
-		exit(1);
-	}
-
-	int solver = atoi(argv[2]);
-	int partition_size = atoi(argv[3]);
-	bool symmetry_breaker = (atoi(argv[4]) == 1);
-	int iterations = atoi(argv[5]);
-	int select_cuts = atoi(argv[6]);              // 0: clique only, 1: oddhole only, 2: both
-	int load_limit = atoi(argv[7]);
-	int custom_config = atoi(argv[8]);           // 0: default, 1: custom
-	int traversal_strategy = atoi(argv[9]);
-	int branching_strategy = atoi(argv[10]);
-
-	if (solver == 1) {
-		printf("Solver: Branch & Bound\n");
-	} else {
-		printf("Solver: Cut & Branch\n");
-	}
-
-	/* read graph input file
-	 * format: http://mat.gsia.cmu.edu/COLOR/instances.html
-	 * graph representation chosen in order to load the LP easily.
-	 * - vector of edges
-	 * - vector of partitions
-	 */
-	FILE* fp = fopen(argv[1], "r");
-
-	if (fp == NULL) {
-		printf("Invalid input file.\n");
-		exit(1);
-	}
-
-	char buf[100];
-	int vertex_size, edge_size;
-
-	set<pair<double,int> > edges; // sometimes we have to filter directed graphs
-
-	while (fgets(buf, sizeof(buf), fp) != NULL) {
-		if (buf[0] == 'c') continue;
-		else if (buf[0] == 'p') {
-			sscanf(&buf[7], "%d %d", &vertex_size, &edge_size);
-		}
-		else if (buf[0] == 'e') {
-			int from, to;
-			sscanf(&buf[2], "%d %d", &from, &to);
-			if (from < to) {
-				edges.insert(pair<double,int>(from, to));
-			} else {
-				edges.insert(pair<double,int>(to, from));
-			}
-		}
-	}
-
-	// build adyacency list
-	edge_size = edges.size();
-	int adyacency_size = vertex_size*vertex_size - ((vertex_size+1)*vertex_size/2);
-	bool* adjacencyList = new bool[adyacency_size]; // can be optimized even more with a bitfield.
-	fill_n(adjacencyList, adyacency_size, false);
-	for (set<pair<double,int> >::iterator it = edges.begin(); it != edges.end(); ++it) {
-		adjacencyList[fromMatrixToVector(it->first, it->second, vertex_size)] = true;
-	}
-
-	// set random seed
-	// srand(time(NULL));
-
-	// asign every vertex to a partition
-	// int partition_size = rand() % vertex_size + 1;
-	vector<vector<int> > partitions(partition_size, vector<int>());
-
-	for (int i = 0; i < vertex_size; ++i) {
-		partitions[i % partition_size].push_back(i+1);
-	}
-
-	// warning: this procedure doesn't guarantee every partition will have an element.
-	// for (int i = 1; i <= vertex_size; ++i) {
-	// 	int assign_partition = rand() % partition_size;
-	// 	partitions[assign_partition].push_back(i);
-	// }
-
-	// // update partition_size
-	// for (std::vector<vector<int> >::iterator it = partitions.begin(); it != partitions.end(); ++it) {
-	// 	if (it->size() == 0) --partition_size;
-	// }
-
-	printf("Graph: vertex_size: %d, edge_size: %d, partition_size: %d\n", vertex_size, edge_size, partition_size);
-
-	// start loading LP using CPLEX
-	int status;
-	CPXENVptr env; // pointer to enviroment
-	CPXLPptr lp;   // pointer to the lp.
-
-	env = CPXopenCPLEX(&status); // create enviroment
-	checkStatus(env, status);
-
-	// create LP
-	lp = CPXcreateprob(env, &status, "Instance of partitioned graph coloring.");
-	checkStatus(env, status);
-
-	setCPLEXConfig(env);
-	if (custom_config == 1) setBranchAndBoundConfig(env);
-	setTraversalStrategy(env, traversal_strategy);
-	setBranchingVariableStrategy(env, branching_strategy);
-
-	if (solver == 1) { // pure branch & bound
-		loadObjectiveFunction(env, lp, vertex_size, partition_size, CPX_BINARY);
-	} else {
-		loadObjectiveFunction(env, lp, vertex_size, partition_size, CPX_CONTINUOUS);
-	}
-
-	loadAdyacencyColorRestriction(env, lp, vertex_size, edge_size, partition_size, adjacencyList);
-	loadSingleColorInPartitionRestriction(env, lp, partitions, partition_size);
-	loadAdyacencyColorRestriction(env, lp, vertex_size, partition_size);
-
-	if (symmetry_breaker) loadSymmetryBreaker(env, lp, partition_size);
-
-	if (solver != 1) loadCuttingPlanes(env, lp, vertex_size, edge_size, partition_size, adjacencyList, iterations, load_limit, select_cuts);
-		
-	// write LP formulation to file, great to debug.
-	status = CPXwriteprob(env, lp, "graph.lp", NULL);
-	checkStatus(env, status);
-
-	convertVariableType(env, lp, vertex_size, partition_size, CPX_BINARY); 
-	
-	solveLP(env, lp, edge_size, vertex_size, partition_size);
-
-	delete[] adjacencyList;
-
-	return 0;
-}
 
 int getVertexIndex(int id, int color, int partition_size) {
 	return partition_size + ((id-1)*partition_size) + (color-1);
@@ -449,7 +283,8 @@ int loadSymmetryBreaker(CPXENVptr& env, CPXLPptr& lp, int partition_size) {
 	return 0;
 }
 
-int loadCuttingPlanes(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int edge_size, int partition_size, bool* adjacencyList, int iterations, int load_limit, int select_cuts) {
+int loadCuttingPlanes(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int edge_size, int partition_size,
+					  bool* adjacencyList, int iterations, int load_limit, int select_cuts) {
 
 	printf("Finding Cutting Planes.\n");
 
@@ -498,7 +333,8 @@ int loadCuttingPlanes(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int edge_si
 	return 0;
 }
 
-int maximalCliqueFamillyHeuristic(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int edge_size, int partition_size, bool* adjacencyList, double* sol, int load_limit) {
+int maximalCliqueFamillyHeuristic(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int edge_size, int partition_size,
+								  bool* adjacencyList, double* sol, int load_limit) {
 
 	printf("Generating clique familly.\n");
 
@@ -590,7 +426,8 @@ int loadUnsatisfiedCliqueRestriction(CPXENVptr& env, CPXLPptr& lp, int partition
 	return 0;
 }
 
-int oddholeFamillyHeuristic(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int edge_size, int partition_size, bool* adjacencyList, double* sol, int load_limit) {
+int oddholeFamillyHeuristic(CPXENVptr& env, CPXLPptr& lp, int vertex_size, int edge_size, int partition_size,
+							bool* adjacencyList, double* sol, int load_limit) {
 
 	printf("Generating oddhole familly.\n");
 
@@ -918,5 +755,139 @@ int checkStatus(CPXENVptr& env, int status) {
 		printf("%s\n", buffer);
 		exit(1);
 	}
+	return 0;
+}
+
+int main(int argc, char **argv) {
+
+	if (argc != 11) {
+		printf("Usage: %s inputFile solver partitions symmetry_breaker iterations select_cuts load_limit custom_config traversal_strategy branching_strategy\n", argv[0]);
+		exit(1);
+	}
+
+	int solver = atoi(argv[2]);
+	int partition_size = atoi(argv[3]);
+	bool symmetry_breaker = (atoi(argv[4]) == 1);
+	int iterations = atoi(argv[5]);
+	int select_cuts = atoi(argv[6]);              // 0: clique only, 1: oddhole only, 2: both
+	int load_limit = atoi(argv[7]);
+	int custom_config = atoi(argv[8]);            // 0: default, 1: custom
+	int traversal_strategy = atoi(argv[9]);
+	int branching_strategy = atoi(argv[10]);
+
+	if (solver == 1) {
+		printf("Solver: Branch & Bound\n");
+	} else {
+		printf("Solver: Cut & Branch\n");
+	}
+
+	/* read graph input file
+	 * format: http://mat.gsia.cmu.edu/COLOR/instances.html
+	 * graph representation chosen in order to load the LP easily.
+	 * - vector of edges
+	 * - vector of partitions
+	 */
+	FILE* fp = fopen(argv[1], "r");
+
+	if (fp == NULL) {
+		printf("Invalid input file.\n");
+		exit(1);
+	}
+
+	char buf[100];
+	int vertex_size, edge_size;
+
+	set<pair<double,int> > edges; // sometimes we have to filter directed graphs
+
+	while (fgets(buf, sizeof(buf), fp) != NULL) {
+		if (buf[0] == 'c') continue;
+		else if (buf[0] == 'p') {
+			sscanf(&buf[7], "%d %d", &vertex_size, &edge_size);
+		}
+		else if (buf[0] == 'e') {
+			int from, to;
+			sscanf(&buf[2], "%d %d", &from, &to);
+			if (from < to) {
+				edges.insert(pair<double,int>(from, to));
+			} else {
+				edges.insert(pair<double,int>(to, from));
+			}
+		}
+	}
+
+	// build adyacency list
+	edge_size = edges.size();
+	int adyacency_size = vertex_size*vertex_size - ((vertex_size+1)*vertex_size/2);
+	bool* adjacencyList = new bool[adyacency_size]; // can be optimized even more with a bitfield.
+	fill_n(adjacencyList, adyacency_size, false);
+	for (set<pair<double,int> >::iterator it = edges.begin(); it != edges.end(); ++it) {
+		adjacencyList[fromMatrixToVector(it->first, it->second, vertex_size)] = true;
+	}
+
+	// set random seed
+	// srand(time(NULL));
+
+	// asign every vertex to a partition
+	// int partition_size = rand() % vertex_size + 1;
+	vector<vector<int> > partitions(partition_size, vector<int>());
+
+	for (int i = 0; i < vertex_size; ++i) {
+		partitions[i % partition_size].push_back(i+1);
+	}
+
+	// warning: this procedure doesn't guarantee every partition will have an element.
+	// for (int i = 1; i <= vertex_size; ++i) {
+	// 	int assign_partition = rand() % partition_size;
+	// 	partitions[assign_partition].push_back(i);
+	// }
+
+	// // update partition_size
+	// for (std::vector<vector<int> >::iterator it = partitions.begin(); it != partitions.end(); ++it) {
+	// 	if (it->size() == 0) --partition_size;
+	// }
+
+	printf("Graph: vertex_size: %d, edge_size: %d, partition_size: %d\n", vertex_size, edge_size, partition_size);
+
+	// start loading LP using CPLEX
+	int status;
+	CPXENVptr env; // pointer to enviroment
+	CPXLPptr lp;   // pointer to the lp.
+
+	env = CPXopenCPLEX(&status); // create enviroment
+	checkStatus(env, status);
+
+	// create LP
+	lp = CPXcreateprob(env, &status, "Instance of partitioned graph coloring.");
+	checkStatus(env, status);
+
+	setCPLEXConfig(env);
+	if (custom_config == 1) setBranchAndBoundConfig(env);
+	setTraversalStrategy(env, traversal_strategy);
+	setBranchingVariableStrategy(env, branching_strategy);
+
+	if (solver == 1) { // pure branch & bound
+		loadObjectiveFunction(env, lp, vertex_size, partition_size, CPX_BINARY);
+	} else {
+		loadObjectiveFunction(env, lp, vertex_size, partition_size, CPX_CONTINUOUS);
+	}
+
+	loadAdyacencyColorRestriction(env, lp, vertex_size, edge_size, partition_size, adjacencyList);
+	loadSingleColorInPartitionRestriction(env, lp, partitions, partition_size);
+	loadAdyacencyColorRestriction(env, lp, vertex_size, partition_size);
+
+	if (symmetry_breaker) loadSymmetryBreaker(env, lp, partition_size);
+
+	if (solver != 1) loadCuttingPlanes(env, lp, vertex_size, edge_size, partition_size, adjacencyList, iterations, load_limit, select_cuts);
+		
+	// write LP formulation to file, great to debug.
+	status = CPXwriteprob(env, lp, "graph.lp", NULL);
+	checkStatus(env, status);
+
+	convertVariableType(env, lp, vertex_size, partition_size, CPX_BINARY); 
+	
+	solveLP(env, lp, edge_size, vertex_size, partition_size);
+
+	delete[] adjacencyList;
+
 	return 0;
 }
