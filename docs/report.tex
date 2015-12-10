@@ -84,7 +84,7 @@
 \centering
 \begin{tabular}{|l l l|}
 \hline
-Integrante       & \multicolumn{1}{c}{LU}     & Correo electrónico        \\ \hline
+Integrantes       & \multicolumn{1}{c}{LU}     & Correo electrónico        \\ \hline
 Martin Baigorria & \multicolumn{1}{c}{575/14} & martinbaigorria@gmail.com \\ 
 Andrés Armesto Brosio & 512/14 & andresarmesto@gmail.com \\  \hline
 \end{tabular}
@@ -104,6 +104,11 @@ Andrés Armesto Brosio & 512/14 & andresarmesto@gmail.com \\  \hline
 \input{model}
 \newpage
 \section{Branch \& Bound}
+
+Los algoritmos de tipo Branch \& Bound se utilizan para resolver problemas de programación lineal entera (PLE) o programación lineal entera mixta (PLEM, PEM, o MIP en inglés). El algoritmo consiste en tomar el problema de PEM y resolver en primera instancia la relajación lineal, es decir aquella que relaja las condiciones de integralidad sobre las variables. Con esto se obtiene un $x^*$, es decir una solución óptima de la relajación lineal. Si la solución obtenida cumple con las condiciones de integralidad, se ha encontrado un óptimo y el algoritmo termina. Si existe al menos una variable que no la cumple, se parte el problema original en 2 o más subproblemas. El proceso de partición se llama \textit{branching}, y existe diversidad de criterios para realizarlo. Sin embargo, todas las formas de branching cumplen que todos los puntos factibles del problema original deben estar en alguna partición, y que el $x^*$ hallado no pertenece a ninguna de ellas, de forma de no caer nuevamente en él. El proceso se repite en cada subproblema que nace, y termina cuando no quedan nodos por explorar. A su vez, otra parte importante del algoritmo consiste en cortar aquellas ramas cuyo valor óptimo de la relajación lineal es peor que el valor óptimo obtenido hasta ese momento. A este fenómeno se lo llama poda, o \textit{bounding} en inglés.
+
+Los criterios más importantes a determinar en un algoritmo de Branch \& Bound son cómo realizar el branching (qué variables) y qué nodos a explorar, o cómo recorrer el árbol de enumeración (verticalmente, horizontalmente, etc.).
+
 La implementación del modelo y del Branch \& Bound se encuentran en el apéndice.
 \input{inequalities}
 \newpage
