@@ -1,8 +1,8 @@
 \section{Modelo}
 
-Dado un grafo $G(V,E)$ con $n = |V|$ vértices y $m = |E|$ aristas,  un coloreo de G se define como una asignación de un color o etiqueta a cada $v \in V$ de forma tal que para todo  par de vértices adyacentes $(p,q) \in E$ poseen colores distintos. El clásico problema de \textit{coloreo de grafos} consiste en encontrar un coloreo del grafo que utilice la menor cantidad de colores posibles.
+Dado un grafo $G(V,E)$ con $n = |V|$ vértices y $m = |E|$ aristas, un coloreo de G se define como una asignación de un color o etiqueta a cada $v \in V$ de forma tal que para todo  par de vértices adyacentes $(p,q) \in E$ poseen colores distintos. El clásico problema de \textit{coloreo de grafos} consiste en encontrar un coloreo del grafo que utilice la menor cantidad de colores posibles.
 
-En este trabajo resolveremos una variante de este problema, el \textit{coloreo particionado de grafos}. A partir de un conjunto de vértices $V$ que se encuentra particionado en $V_1,...,V_k$, el problema consiste en asignar un color $c \in C$ a sólo un vértice de cada partición de forma tal que dos vértices adyacentes no reciban el mismo color y minimizando la cantidad de colores utilizados.
+En este trabajo resolveremos una generalización de este problema, el \textit{coloreo particionado de grafos}. A partir de un conjunto de vértices $V$ que se encuentra particionado en $V_1,...,V_k$, el problema consiste en asignar un color $c \in C$ a sólo un vértice de cada partición de forma tal que dos vértices adyacentes no reciban el mismo color y minimizando la cantidad de colores utilizados.
 
 Este problema se puede modelar con Programación Lineal Entera. Para ello, definamos las siguientes variables:
 
